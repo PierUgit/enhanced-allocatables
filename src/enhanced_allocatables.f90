@@ -5,7 +5,7 @@ implicit none
 
    PRIVATE
    
-   PUBLIC eallocate, resize, edeallocate, append, drop, capa, print_info
+   PUBLIC eallocate, resize, edeallocate, capa, print_info
    
    integer, parameter :: MAX_OVERP = 2*10**4
       
@@ -74,19 +74,17 @@ CONTAINS
    end subroutine
    
    !********************************************************************************************
-   subroutine resize(x,lb,ub,keep,capacity,container)
+   subroutine resize(x,lb,ub,keep,capacity,container,extend,drop)
    !********************************************************************************************
    ! simulation of the new resize statement
-   !
-   ! resize( a(lb:ub)[, keep=k][, capacity=cap][, container=con] )
-   !
-   !
    !********************************************************************************************
    real, allocatable, intent(inout)            :: x(:)
    integer,           intent(in),     optional :: lb, ub
    logical,           intent(in),     optional :: keep
    integer,           intent(in),     optional :: capacity
    character(*),      intent(in),     optional :: container
+   real,              intent(in),     optional :: extend(:)
+   integer,           intent(in),     optional :: drop
    
    integer :: lb___, newlb, size___, newsize, cap___, newcap
    character(8) :: con
@@ -107,18 +105,20 @@ CONTAINS
    else if (present(lb).and.present(ub)) then
       newlb = lb
       newsize = ub-lb+1
-      if (newsize > size___ .and. con /= 'fit') then
-         do while (newsize > newcap)
-            newcap = 2 * newcap 
-         end do 
-         newcap = min(newcap, newsize + MAX_OVERP)
-      end if
-      if (newsize < size___ .and. con == 'any') then
-         do while (newsize < newcap/3)
-            newcap = newcap / 2
-         end do
-         if (newsize < newcap - 3*MAX_OVERP/2) newcap = newsize + MAX_OVERP
-      end if
+   end if
+   if (present(extend)) newsize = newsize + size(extend)
+   if (present(drop)) newsize = newsize - drop
+   if (newsize > size___ .and. con /= 'fit') then
+      do while (newsize > newcap)
+         newcap = 2 * newcap 
+      end do 
+      newcap = min(newcap, newsize + MAX_OVERP)
+   end if
+   if (newsize < size___ .and. con == 'any') then
+      do while (newsize < newcap/3)
+         newcap = newcap / 2
+      end do
+      if (newsize < newcap - 3*MAX_OVERP/2) newcap = newsize + MAX_OVERP
    end if
    if (con == 'fit') then
       newcap = newsize
@@ -128,38 +128,10 @@ CONTAINS
    if (newlb   /= lb___  ) call set_lbound(x,newlb)
    if (newcap  /= cap___ ) call set_capacity(x,newcap,logical(keep,kind=c_bool))
    if (newsize /= size___) call set_size(x,newsize)
+   if (present(extend)) x(newlb+size___:newlb+newsize) = extend(:)
    
    end subroutine
    
-   !********************************************************************************************
-   subroutine append(x,y)
-   !********************************************************************************************
-   real, allocatable, intent(inout) :: x(:)   
-   real,              intent(in)    :: y(:)
-   
-   integer :: l, u
-   !********************************************************************************************  
-   l = lbound(x,dim=1)
-   u = ubound(x,dim=1)
-   call resize(x,lb=l,ub=u+size(y),keep=.true.)
-   x(u+1: ) = y(:)
-   
-   end subroutine
-   
-   !********************************************************************************************
-   subroutine drop(x,k)
-   !********************************************************************************************
-   real, allocatable, intent(inout) :: x(:)   
-   integer,           intent(in)    :: k
-   
-   integer :: l, u
-   !********************************************************************************************      
-   l = lbound(x,dim=1)
-   u = ubound(x,dim=1)
-   call resize(x,lb=l,ub=u-k,keep=.true.,container='any')
-   
-   end subroutine
-      
    !********************************************************************************************
    subroutine edeallocate(x)
    !********************************************************************************************
