@@ -10,10 +10,10 @@ Objectives:
 It it was integrated to the langage, the proposal would add:
 - a *capacity* specifier to the `allocatable` statement
 
-`allocate( array([lb:]ub) [, capacity=c] )`
+`allocate( array([lb:]ub) [,capacity=c] )`
 - a `resize` statement with the `keep`, `capacity`, `container`, `extend`, `mold`, `source` specifiers
 
-`resize( array([lb]:[ub]) [, keep=k] [, capacity=c] [, container=con] [, extend=b], [, source=s] [, mold=m])`
+`resize( array([lb]:[ub]) [,keep=k] [,capacity=c] [,container=con] [,extend=e] [,drop=d])`
 
 - a `capa( a )` integer function to inquire the capacity of an array
 
