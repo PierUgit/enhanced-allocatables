@@ -72,3 +72,4 @@ Wrapper to the standard `deallocate` statement.
 - add more tests for argument checking
 - write the routines for the 2D case (rank=2 or more arrays have some specificities compared to rank=1)
 - add the source= and mold= specifiers
+- add use cases
