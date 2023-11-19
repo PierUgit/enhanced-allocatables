@@ -98,6 +98,7 @@ CONTAINS
    cap___  = capa(x);         newcap  = cap___
    lb___   = lbound(x,dim=1); newlb   = lb___
    
+   ! determine bounds and size
    if (present(lb).and..not.present(ub)) then
       newlb = lb
    else if (.not.present(lb).and.present(ub)) then
@@ -109,6 +110,7 @@ CONTAINS
    if (present(extend)) newsize = newsize + size(extend)
    if (present(drop)) newsize = newsize - drop
    
+   ! determine capacity
    if (present(capacity)) then
       newcap = max(capacity,newsize)
    else if (con == 'fit') then
@@ -126,10 +128,13 @@ CONTAINS
    end if
    newcap = max(newcap,1)
    
+   ! update everything
    if (newlb   /= lb___  ) call set_lbound(x,newlb)
    if (newcap  /= cap___ ) call set_capacity(x,newcap,logical(keep,kind=c_bool))
    if (newsize /= size___) call set_size(x,newsize)
-   if (present(extend)) x(newlb+size___:newlb+newsize) = extend(:)
+   
+   ! copy the extend content
+   if (present(extend)) x(newlb+size___:newlb+newsize-1) = extend(:)
    
    end subroutine
    
