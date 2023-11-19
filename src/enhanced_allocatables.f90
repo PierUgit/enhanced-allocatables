@@ -108,24 +108,24 @@ CONTAINS
    end if
    if (present(extend)) newsize = newsize + size(extend)
    if (present(drop)) newsize = newsize - drop
-   if (newsize > size___ .and. con /= 'fit') then
+   
+   if (present(capacity)) then
+      newcap = max(capacity,newsize)
+   else if (con == 'fit') then
+      newcap = newsize
+   else if (newsize > size___ .and. con /= 'fit') then
       do while (newsize > newcap)
          newcap = 2 * newcap 
       end do 
       newcap = min(newcap, newsize + MAX_OVERP)
-   end if
-   if (newsize < size___ .and. con == 'any') then
+   else if (newsize < size___ .and. con == 'any') then
       do while (newsize < newcap/3)
          newcap = newcap / 2
       end do
       if (newsize < newcap - 3*MAX_OVERP/2) newcap = newsize + MAX_OVERP
    end if
-   if (con == 'fit') then
-      newcap = newsize
-   else if (present(capacity)) then
-      newcap = max(capacity,newsize)
-   end if
    newcap = max(newcap,1)
+   
    if (newlb   /= lb___  ) call set_lbound(x,newlb)
    if (newcap  /= cap___ ) call set_capacity(x,newcap,logical(keep,kind=c_bool))
    if (newsize /= size___) call set_size(x,newsize)
