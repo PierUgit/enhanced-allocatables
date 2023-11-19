@@ -23,9 +23,8 @@ Limitations of the demonstration code:
 - default real kind only
 - rank-1 only at the moment
 - size limited to default integer values
-- size=0 not yet managed
 - not thread-safe
-- The reallocatable/resizable features are achieved through directly manipulating the C array descriptors in the framework of the C interoperability: this is non standard, and therefore not guaranteed to be portable ! 
+- The reallocatable/resizable features are achieved by directly manipulating the C array descriptors in the framework of the C interoperability: this is non standard, and therefore not guaranteed to be portable ! 
 
 ## Specifications
 
@@ -35,7 +34,7 @@ Limitations of the demonstration code:
 -- the capacity is (possibly iteratively) doubled if the new size exceeds the capacity
 -- optionaly, the capacity is (possibly iteratively) halved if the new size gets below a percentage of the capacity
 -- the compiler may cap the overprovisioning (possibly as a function of the available physical memory)
-- the user can overide the default strategy by using the `capacity` specifier
+- the user can overide the default strategy by using the `capacity` specifier (this is an important point)
 
 ## Documentation
 
@@ -67,7 +66,6 @@ Wrapper to the standard `deallocate` statement.
 
 ## ToDo
 
-- manage the size=0 case
 - refine some default values (keep=.true. should be implied with extend= and drop=, and container='any' may be implied with drop=)
 - add more tests for argument checking
 - write the routines for the 2D case (rank=2 or more arrays have some specificities compared to rank=1)

@@ -125,6 +125,7 @@ CONTAINS
    else if (present(capacity)) then
       newcap = max(capacity,newsize)
    end if
+   newcap = max(newcap,1)
    if (newlb   /= lb___  ) call set_lbound(x,newlb)
    if (newcap  /= cap___ ) call set_capacity(x,newcap,logical(keep,kind=c_bool))
    if (newsize /= size___) call set_size(x,newsize)
@@ -137,7 +138,7 @@ CONTAINS
    !********************************************************************************************
    real, allocatable, intent(inout) :: x(:)   
    !********************************************************************************************
-   call dealloc(x)
+   ! call dealloc(x)
    deallocate(x)
    
    end subroutine

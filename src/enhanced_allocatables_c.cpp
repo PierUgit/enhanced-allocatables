@@ -14,20 +14,26 @@ unordered_map<void*,int> capamap;
 // returns the capacity    
 extern "C"
 int ea_capacity(CFI_cdesc_t* x) {
+    if (capamap.find(x->base_addr) == capamap.end()) {
+        printf("ea_capacity() error: base address %p not mapped",x->base_addr);
+        exit(100);
+    }
     return capamap[x->base_addr];
 }
 
 // prints some informations
 extern "C"
 void ea_printInfo(CFI_cdesc_t*  x) {
-    printf("lb = %d\n",x->dim[0].lower_bound);
+    printf("lbound = %d\n",x->dim[0].lower_bound);
+    printf("size = %d\n",x->dim[0].extent);
+    printf("address = %p %p\n",x->base_addr,NULL);
 }
 
 // "allocates" the array; actually Fortran allocate() must have been called before
 extern "C"
 void ea_alloc(CFI_cdesc_t*  x,
               int*          c) {
-    int cc = x->dim[0].extent;
+    int cc = MAX(x->dim[0].extent,1);
     cc = (c == NULL ? cc : MAX(cc,*c));
     free(x->base_addr);
     x->base_addr = malloc(cc * sizeof(float));
@@ -41,7 +47,7 @@ void ea_setLBound(CFI_cdesc_t*  x,
     x->dim[0].lower_bound = *lb;
 }
 
-// sets a new size; the capacity is supposed to be enough
+// sets a new size; the capacity is supposed to be enough; the size cannot be zero
 extern "C"
 void ea_setSize(CFI_cdesc_t*  x,
               int*          newsize) {
@@ -52,7 +58,7 @@ void ea_setSize(CFI_cdesc_t*  x,
 extern "C"
 void ea_setCapacity(CFI_cdesc_t*  x,
                     int*          newcap,
-                    bool*         keep) {
+                    bool*         keep) {    
     float* tmp = (float*)malloc(*newcap * sizeof(float));
     if (keep) {
         int n = MIN(*newcap,ea_capacity(x));
