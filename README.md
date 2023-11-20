@@ -27,7 +27,8 @@ Limitations of the demonstration code:
 - The reallocatable/resizable features are achieved by directly manipulating the C array descriptors in the framework of the C interoperability: this is non standard, and therefore not guaranteed to be portable ! 
 
 **TESTED SUCCESSFULLY WITH GFORTRAN/G++ 13 ON macOS 10.13**
-**DOES NOT WORK WITH IFORT/ICPC 18 ON Gnu/Linux db9**
+
+**DOES NOT WORK WITH IFORT/ICPC 18 ON GNU/Linux db9**
 
 ## Specifications
 
