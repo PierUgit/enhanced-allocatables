@@ -26,6 +26,9 @@ Limitations of the demonstration code:
 - not thread-safe
 - The reallocatable/resizable features are achieved by directly manipulating the C array descriptors in the framework of the C interoperability: this is non standard, and therefore not guaranteed to be portable ! 
 
+**TESTED SUCCESSFULLY WITH GFORTRAN/G++ 13 ON macOS 10.13**
+**DOES NOT WORK WITH IFORT/ICPC 18 ON Gnu/Linux db9**
+
 ## Specifications
 
 - Similarly to C++ vectors, the enhanced Fortran allocatable arrays have a *capacity* property, corresponding to the actually allocated memory volume. The capacity is larger or equal to the size, and the difference `capacity - size` is the overprovisioning
