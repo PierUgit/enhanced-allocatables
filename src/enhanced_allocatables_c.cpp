@@ -75,6 +75,6 @@ void ea_setCapacity(CFI_cdesc_t*  x,
 extern "C"
 void ea_deAlloc(CFI_cdesc_t*  x) {
     capamap.erase(capamap.find(x->base_addr));
-    free(x->base_addr);
-    x->base_addr = malloc(x->dim[0].extent * sizeof(float));
+    //free(x->base_addr);
+    //x->base_addr = malloc(x->dim[0].extent * sizeof(float));
 }
