@@ -87,25 +87,33 @@ CONTAINS
    integer,           intent(in),     optional :: drop
    
    integer :: lb___, newlb, size___, newsize, cap___, newcap
+   logical(c_bool) :: keep___
    character(8) :: con
    !********************************************************************************************
-   if (present(capacity) .and. present(container)) &
-      error stop "capacity= and container= are mutually exclusive"
-      
+   keep___ = .false. ; if (present(keep)) keep___ = keep
    con = 'grow'; if (present(container)) con = container
    
+   if (present(capacity).and.present(container)) &
+      error stop "capacity= and container= are mutually exclusive"
+   if (present(extend).and.present(drop)) &
+      error stop "extend= and drop= are mutually exclusive"
+   if ((present(extend).or.present(drop)).and..not.keep___) &
+      error stop "keep must be .true. is extend= or drop= are present"
+      
    size___ = size(x);         newsize = size___        
    cap___  = capa(x);         newcap  = cap___
    lb___   = lbound(x,dim=1); newlb   = lb___
    
    ! determine bounds and size
    if (present(lb).and..not.present(ub)) then
-      newlb = lb
+      newlb = merge(lb, 1, size___ > 0)
    else if (.not.present(lb).and.present(ub)) then
-      newlb = ub-size(x)+1
+      newlb = merge(ub-size___+1, 1, size___ > 0)
    else if (present(lb).and.present(ub)) then
-      newlb = lb
-      newsize = ub-lb+1
+      if (present(extend).or.present(drop)) &
+         error stop "extend= or drop= must not be coded if both lb= and ub= are coded"
+      newsize = max(ub-lb+1,0)
+      newlb = merge(lb, 1, newsize > 0)
    end if
    if (present(extend)) newsize = newsize + size(extend)
    if (present(drop)) newsize = newsize - drop
@@ -130,7 +138,7 @@ CONTAINS
    
    ! update everything
    if (newlb   /= lb___  ) call set_lbound(x,newlb)
-   if (newcap  /= cap___ ) call set_capacity(x,newcap,logical(keep,kind=c_bool))
+   if (newcap  /= cap___ ) call set_capacity(x,newcap,keep___)
    if (newsize /= size___) call set_size(x,newsize)
    
    ! copy the extend content

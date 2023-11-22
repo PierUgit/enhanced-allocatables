@@ -6,6 +6,8 @@ implicit none
 real, allocatable :: a(:), b(:)
 integer :: i, cap, newcap
 integer(int64) :: location, newlocation
+integer(int64) :: tic, toc
+real :: rate
 
 ! Testing C descriptors for different cases of allocatable arrays
 ! unallocated
@@ -45,6 +47,7 @@ print*
 print*, "====== WITH A NORMAL ALLOCATABLE"
 print*, "starts with size=0"
 print*, "iteratively append 1 element, then iteratively drop 1 element"
+call system_clock(tic,rate)
 allocate(a(0))
 location = loc(a)
 do i = 1, 100000
@@ -64,11 +67,14 @@ do i = 1, 100000
    end if
 end do
 deallocate(a)
+call system_clock(toc,rate)
+print*, "Elapsed time =", (toc-tic)/rate
 
 print*
 print*, "====== WITH A ENHANCED ALLOCATABLE"
 print*, "starts with size=0"
 print*, "iteratively append 1 element, then iteratively drop 1 element"
+call system_clock(tic,rate)
 call eallocate(a,lb=1,ub=0)
 cap = capa(a)
 do i = 1, 100000
@@ -88,6 +94,8 @@ do i = 1, 100000
    end if
 end do
 call edeallocate(a)
+call system_clock(toc,rate)
+print*, "Elapsed time =", (toc-tic)/rate
 
 print*
 print*, "====== WITH A ENHANCED ALLOCATABLE"
