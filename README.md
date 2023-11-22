@@ -71,10 +71,3 @@ Wrapper to the standard `allocate` statement. The capacity can be set, otherwise
 
 Wrapper to the standard `deallocate` statement. 
 
-## ToDo
-
-- refine some default values (keep=.true. should be implied with extend= and drop=, and container='any' may be implied with drop=)
-- add more tests for argument checking
-- write the routines for the 2D case (rank=2 or more arrays have some specificities compared to rank=1)
-- add the source= and mold= specifiers
-- add use cases
