@@ -85,8 +85,8 @@ CONTAINS
    character(*),      intent(in),     optional :: container
    real,              intent(in),     optional :: extend(:)
    integer,           intent(in),     optional :: drop
-   real,              intent(in),     optional :: mold(:)
-   real,              intent(in),     optional :: source(..)
+   real, allocatable, intent(in),     optional :: mold(:)
+   real, allocatable, intent(in),     optional :: source(..)
    
    integer :: lb___, newlb, size___, newsize, cap___, newcap
    logical(c_bool) :: keep___
@@ -108,19 +108,16 @@ CONTAINS
          error stop "extend=/drop= must not be present if mold= is present"
    end if
    if (present(source)) then
-      select rank(source)
-      rank(0)
-         continue
-      rank(1)
+      if (rank(source) == 1) then
          if (present(lb).or.present(ub)) &
             error stop "lb=/ub= must not be present if source= is rank 1"
          if (present(extend).or.present(drop)) &
             error stop "extend=/drop= must not be present if source= is rank 1"
          if (keep___) &
             error stop "keep= must be .false. if source= is rank 1"
-      rank(default)
+      else if (rank(source) > 1) then
          error stop "source= must be rank 0 or 1"
-      end select
+      end if
    end if
       
    size___ = size(x);         newsize = size___        
@@ -139,13 +136,12 @@ CONTAINS
       newlb = merge(lb, 1, newsize > 0)
    else if (present(mold)) then
       newsize = size(mold)
-      newlb = merge(lbound(mold), 1, newsize > 0)
+      newlb = merge(lbound(mold,1), 1, newsize > 0)
    else if (present(source)) then
-      select rank(source)
-      rank(1)
+      if (rank(source) == 1) then
          newsize = size(source)
-         newlb = merge(lbound(source), 1, newsize > 0)
-      end select
+         newlb = merge(lbound(source,1), 1, newsize > 0)
+      end if
    end if
    if (present(extend)) newsize = newsize + size(extend)
    if (present(drop)) newsize = newsize - drop

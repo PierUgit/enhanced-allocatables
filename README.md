@@ -49,7 +49,7 @@ TESTED SUCCESSFULLY WITH:
 
 Wrapper to the standard `allocate` statement. The capacity can be set, otherwise it is set the requested size. 
 
-### `call resize( array [, lb=l] [, ub=u] [,keep=k] [,capacity=c | ,container=con] [,extend=e | ,drop=d] )
+### `call resize( array [, lb=l] [, ub=u] [,keep=k] [,capacity=c | ,container=con] [,extend=e | ,drop=d] [,mold=m | ,source=s] )
 
 - `l` and `u` are the new lower and upper bounds.
 -- if none is coded, either `capacity=c` or `container='fit'` must be coded
@@ -66,6 +66,15 @@ Wrapper to the standard `allocate` statement. The capacity can be set, otherwise
 -- `lb`and `ub` must not be coded together in this case
 - `d` is an integer that tells to drop the `k` last elements of `array`
 -- `lb`and `ub` must not be coded together in this case
+- `m` is a rank 1 array that determines the lower and upper bounds of `array`
+-- `lb`and `ub` must not be coded in this case 
+- `s` is a scalar or a rank 1 array 
+-- if a scalar
+--- `s` is used to fill the entire resized array if keep=.false.
+--- `s` is used to fill the extended part of the resized array if keep=.true.
+-- if a rank 1 array 
+--- `s` determines the lower and upper bounds of `array`
+--- the content of `s` is copied to array
 
 ### `call edeallocate(array)`
 
