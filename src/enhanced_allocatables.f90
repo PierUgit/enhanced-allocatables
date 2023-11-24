@@ -74,7 +74,7 @@ CONTAINS
    end subroutine
    
    !********************************************************************************************
-   subroutine resize(x,lb,ub,keep,capacity,container,extend,drop)
+   subroutine resize(x,lb,ub,keep,capacity,container,extend,drop,mold,source)
    !********************************************************************************************
    ! simulation of the new resize statement
    !********************************************************************************************
@@ -85,6 +85,8 @@ CONTAINS
    character(*),      intent(in),     optional :: container
    real,              intent(in),     optional :: extend(:)
    integer,           intent(in),     optional :: drop
+   real,              intent(in),     optional :: mold(:)
+   real,              intent(in),     optional :: source(..)
    
    integer :: lb___, newlb, size___, newsize, cap___, newcap
    logical(c_bool) :: keep___
@@ -99,6 +101,27 @@ CONTAINS
       error stop "extend= and drop= are mutually exclusive"
    if ((present(extend).or.present(drop)).and..not.keep___) &
       error stop "keep must be .true. is extend= or drop= are present"
+   if (present(mold)) then
+      if (present(lb).or.present(ub)) &
+         error stop "lb=/ub= must not be present if mold= is present"
+      if (present(extend).or.present(drop)) &
+         error stop "extend=/drop= must not be present if mold= is present"
+   end if
+   if (present(source)) then
+      select rank(source)
+      rank(0)
+         continue
+      rank(1)
+         if (present(lb).or.present(ub)) &
+            error stop "lb=/ub= must not be present if source= is rank 1"
+         if (present(extend).or.present(drop)) &
+            error stop "extend=/drop= must not be present if source= is rank 1"
+         if (keep___) &
+            error stop "keep= must be .false. if source= is rank 1"
+      rank(default)
+         error stop "source= must be rank 0 or 1"
+      end select
+   end if
       
    size___ = size(x);         newsize = size___        
    cap___  = capa(x);         newcap  = cap___
@@ -114,6 +137,15 @@ CONTAINS
          error stop "extend= or drop= must not be coded if both lb= and ub= are coded"
       newsize = max(ub-lb+1,0)
       newlb = merge(lb, 1, newsize > 0)
+   else if (present(mold)) then
+      newsize = size(mold)
+      newlb = merge(lbound(mold), 1, newsize > 0)
+   else if (present(source)) then
+      select rank(source)
+      rank(1)
+         newsize = size(source)
+         newlb = merge(lbound(source), 1, newsize > 0)
+      end select
    end if
    if (present(extend)) newsize = newsize + size(extend)
    if (present(drop)) newsize = newsize - drop
@@ -143,6 +175,19 @@ CONTAINS
    
    ! copy the extend content
    if (present(extend)) x(newlb+size___:newlb+newsize-1) = extend(:)
+   ! copy the source content
+   if (present(source)) then
+      select rank(source)
+      rank(0)
+         if (keep___) then
+            x(newlb+size___:newlb+newsize-1) = source
+         else
+            x(:) = source
+         end if
+      rank(1)
+         x(:) = source(:)
+      end select
+   end if
    
    end subroutine
    
