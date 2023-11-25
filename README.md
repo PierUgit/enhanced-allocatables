@@ -48,42 +48,60 @@ TESTED SUCCESSFULLY WITH:
 ### eallocate()
 `call eallocate(array , lb , ub [,capacity=c] )`
 
-Wrapper to the standard `allocate` statement. The capacity can be set, otherwise it is set the requested size. 
+Wrapper to the standard `allocate` statement. The capacity can be specified, otherwise it is set to the requested size. 
 
 ### resize
 `call resize( array [,lb=l] [,ub=u] [,keep=k] [,capacity=c |,container=con] [,extend=e | ,drop=d] [,mold=m | ,source=s] )`
 
+`lb=l` , `ub=u` 
 - `l` and `u` are the new lower and upper bounds.
-  - if none is coded, either `capacity=c` or `container='fit'` must be coded
-  - if only one is coded the bounds are updated and the size does not change
-  - if both are coded the size is potentially modified, and so is the capacity
-- `k` is a logical scalar that is `.false.` by default. If `.true.`, the content of the array is kept whenever the array has te be reallocated under the hood
+- if none is coded, either `capacity=c` or `container='fit'` must be coded
+- if only one is coded, the bounds are updated and the size does not change
+- if both are coded the size is potentially modified, and so is the capacity
+
+`keep=k`
+- `k` is a logical scalar that is `.false.` by default. 
+- If `.true.`, the content of the array is kept whenever the array has te be reallocated under the hood
+
+`capacity=c`
 - `c` is an integer scalar, used to to force the number of elements actually allocated under the hood
-- `con` is a character(*) scalar.
+
+`container=con`
+- `con` is a character(*) scalar:
   - `'grow'`: the capacity can only increase
   - `'any'`: the capacity can increase or decrease
   - `'fit'`: the capacity is set to the size
-  - cannot be coded together with `capacity=`
+- cannot be coded together with `capacity=`
+
+`extend=e`
 - `e` is a rank-1 array that is appended to `array`
-  - the size of `array` is increased accordindly
-  - `lb=` and `ub=` must not be coded together in this case
-  - cannot be coded together with `drop=`
-- `d` is an integer that tells to drop the `k` last elements of `array`
-  - `lb=` and `ub=` must not be coded together in this case
-  - cannot be coded together with `extend=`
+- the size of `array` is increased accordindly
+- `lb=` and `ub=` must not be coded together in this case
+- cannot be coded together with `drop=`
+
+`drop=d`
+- `d` is an integer scaler
+- drops the `d` last elements of `array`
+- `lb=` and `ub=` must not be coded together in this case
+- cannot be coded together with `extend=`
+
+`mold=m`
+- works exactly like in the current `allocate` statement
 - `m` is a rank 1 array that determines the new lower and upper bounds of `array`
-  - `lb=`, `ub=`, `extend=`, and `drop=` must not be coded in this case 
-- `s` is a scalar or a rank 1 array 
-  - if a scalar
-    - `s` is used to fill the entire resized array if keep=.false.
-    - `s` is used to fill the extended part of the resized array if `keep=.true`
-  - if a rank 1 array 
-    - `s` determines the new lower and upper bounds of `array`
-    - the content of `s` is copied to `array`
-    - `keep=` must not be coded in this case
+- `lb=`, `ub=`, `extend=`, and `drop=` must not be coded in this case 
+
+`source=s`
+- works *almost* exactly like in the current `allocate` statement
+- if `s` is a scalar
+  - `s` is used to fill the entire resized array if keep=.false.
+  - `s` is used to fill the new part of the resized array if enlarged if `keep=.true`
+- if `s` is a rank 1 array
+  - `s` determines the new lower and upper bounds of `array`
+  - the content of `s` is copied to `array`
+  - `keep=` must not be coded in this case
 
 ### edeallocate()
 `call edeallocate(array)`
 
-Wrapper to the standard `deallocate` statement. Is needed to update the hidden apacity table.
+Wrapper to the standard `deallocate` statement. Is needed to update the hidden capacity table.
 
