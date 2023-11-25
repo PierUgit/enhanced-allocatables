@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <cstdio>
+#include <cstring>
 #include <unordered_map>
 #include <ISO_Fortran_binding.h>
 
@@ -65,15 +66,16 @@ void ea_setSize(CFI_cdesc_t*  x,
 extern "C"
 void ea_setCapacity(CFI_cdesc_t*  x,
                     int*          newcap,
-                    bool*         keep) {    
-    float* tmp = (float*)malloc(*newcap * sizeof(float));
+                    bool*         keep) {
+    if (*newcap == capamap[x->base_addr]) return;    
+    void* tmp = malloc(*newcap * sizeof(float));
     if (keep) {
         int n = MIN(*newcap,ea_capacity(x));
         int size = 1;
         for (int r=0; r < x->rank; r++) size *= x->dim[r].extent;
         size = MAX(size,1);
         n = MIN(n,size);
-        for (int i=0; i<n; i++) tmp[i] = ((float*)x->base_addr)[i];
+        memcpy(tmp,x->base_addr,n*sizeof(float));
     }
     capamap.erase(capamap.find(x->base_addr));
     free(x->base_addr);

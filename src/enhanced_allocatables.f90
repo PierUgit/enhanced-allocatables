@@ -116,7 +116,7 @@ CONTAINS
    real, allocatable, intent(in),     optional :: mold(:)
    real, allocatable, intent(in),     optional :: source(..)
    
-   integer :: lb___, newlb, size___, newsize, cap___, newcap
+   integer :: newlb, oldsize, newsize, newcap
    logical(c_bool) :: keep___
    character(8) :: con
    !********************************************************************************************
@@ -152,24 +152,19 @@ CONTAINS
          error stop "lb1= and ub1= must not be both present if extend= or drop= are present"
    end if
 
-   size___ = size(x);         newsize = size___        
-   cap___  = capa(x);         newcap  = cap___
-   lb___   = lbound(x,dim=1); newlb   = lb___
+   newsize = size(x)     ; oldsize = newsize;    
+   newcap  = capa(x)
+   newlb   = lbound(x,1)
    
    ! determine bounds and size
-   if (present(lb).and..not.present(ub)) then
+   if (present(lb)) then
       newlb = lb
-   else if (.not.present(lb).and.present(ub)) then
-      newlb = ub-size___+1
-   else if (present(lb).and.present(ub)) then
-      newsize = max(ub-lb+1,0)
-      newlb = lb
-   end if
-   if (newsize <= 0) then
-      newlb = 1
-      newsize = 0
+      if (present(ub)) newsize = ub-lb+1
+   else if (present(ub)) then
+      newlb = ub-size(x)+1
    end if
 
+   ! mold and source
    if (present(mold)) then
       newsize = size(mold)
       newlb = lbound(mold,1)
@@ -180,19 +175,25 @@ CONTAINS
       end if
    end if
    if (present(extend)) newsize = newsize + size(extend)
-   if (present(drop)) newsize = newsize - drop
+   if (present(drop))   newsize = newsize - drop
    
+   ! in case newsize drops to zero
+   if (newsize <= 0) then
+      newlb = 1
+      newsize = 0
+   end if
+
    ! determine capacity
    if (present(capacity)) then
       newcap = max(capacity,newsize)
    else if (con == 'fit') then
       newcap = newsize
-   else if (newsize > size___ .and. con /= 'fit') then
+   else if (newsize > size(x) .and. con /= 'fit') then
       do while (newsize > newcap)
          newcap = 2 * newcap 
       end do 
       newcap = min(newcap, newsize + MAX_OVERP)
-   else if (newsize < size___ .and. con == 'any') then
+   else if (newsize < size(x) .and. con == 'any') then
       do while (newsize < newcap/3)
          newcap = newcap / 2
       end do
@@ -201,18 +202,18 @@ CONTAINS
    newcap = max(newcap,1)
    
    ! update everything
-   if (newlb   /= lb___  ) call set_lbound(x,1,newlb)
-   if (newcap  /= cap___ ) call set_capacity(x,newcap,keep___)
-   if (newsize /= size___) call set_size(x,1,newsize)
+   call set_capacity(x,newcap,keep___)
+   call set_lbound(x,1,newlb)
+   call set_size(x,1,newsize)
    
    ! copy the extend content
-   if (present(extend)) x(newlb+size___:newlb+newsize-1) = extend(:)
+   if (present(extend)) x(newlb+oldsize:newlb+newsize-1) = extend(:)
    ! copy the source content
    if (present(source)) then
       select rank(source)
       rank(0)
          if (keep___) then
-            x(newlb+size___:newlb+newsize-1) = source
+            x(newlb+oldsize:newlb+newsize-1) = source
          else
             x(:) = source
          end if
@@ -238,7 +239,7 @@ CONTAINS
    real, allocatable, intent(in),     optional :: mold(:,:)
    real, allocatable, intent(in),     optional :: source(..)
    
-   integer :: lb___(2), newlb(2), size___(2), newsize(2), cap___, newcap, i
+   integer :: newlb(2), oldsize(2), newsize(2), newcap, i
    logical(c_bool) :: keep___
    character(8) :: con
    !********************************************************************************************
@@ -276,34 +277,25 @@ CONTAINS
          error stop "lb2= and ub2= must not be both present if extend= or drop= are present"
    end if
    
-   size___ = shape(x);                      newsize = size___        
-   cap___  = capa(x);                       newcap  = cap___
-   lb___   = lbound(x);                     newlb   = lb___
+   newsize = shape(x) ; oldsize = shape(x);
+   newcap  = capa(x)             
+   newlb   = lbound(x)
    
    ! determine bounds and size
-   if (present(lb1).and..not.present(ub1)) then
+   if (present(lb1)) then
       newlb(1) = lb1
-   else if (.not.present(lb1).and.present(ub1)) then
-      newlb(1) = ub1-size___(1)+1
-   else if (present(lb1).and.present(ub1)) then
-      newsize(1) = max(ub1-lb1+1,0)
-      newlb(1) = lb1
+      if (present(ub1)) newsize(1) = ub1-lb1+1
+   else if (present(ub1)) then
+      newlb(1) = ub1-size(x,1)+1
    end if
-   if (present(lb2).and..not.present(ub2)) then
-      newlb(2) = merge(lb2, 1, product(size___) > 0)
-   else if (.not.present(lb2).and.present(ub2)) then
-      newlb(2) = merge(ub2-size___(2)+1, 1, product(size___) > 0)
-   else if (present(lb2).and.present(ub2)) then
-      if (present(extend).or.present(drop)) &
-         error stop "extend= or drop= must not be coded if both lb= and ub= are coded"
-      newsize(2) = max(ub2-lb2+1,0)
-      newlb(2) = merge(lb2, 1, product(newsize) > 0)
+   if (present(lb2)) then
+      newlb(2) = lb2
+      if (present(ub2)) newsize(2) = ub2-lb2+1
+   else if (present(ub2)) then
+      newlb(2) = ub2-size(x,2)+1
    end if
-   where (newsize(:) <= 0)
-      newlb(:) = 1
-      newsize(:) = 0
-   end where
 
+   ! mold/source/extend/drop
    if (present(mold)) then
       newsize = shape(mold)
       newlb = lbound(mold)
@@ -316,17 +308,23 @@ CONTAINS
    if (present(extend)) newsize(2) = newsize(2) + size(extend,2)
    if (present(drop)) newsize(2) = newsize(2) - drop
    
+   ! in case newsize drops to 0
+   where (newsize(:) <= 0)
+      newlb(:) = 1
+      newsize(:) = 0
+   end where
+
    ! determine capacity
    if (present(capacity)) then
       newcap = max(capacity,product(newsize))
    else if (con == 'fit') then
       newcap = product(newsize)
-   else if (product(newsize) > product(size___) .and. con /= 'fit') then
+   else if (product(newsize) > size(x) .and. con /= 'fit') then
       do while (product(newsize) > newcap)
          newcap = 2 * newcap 
       end do 
       newcap = min(newcap, product(newsize) + MAX_OVERP)
-   else if (product(newsize) < product(size___) .and. con == 'any') then
+   else if (product(newsize) < size(x) .and. con == 'any') then
       do while (product(newsize) < newcap/3)
          newcap = newcap / 2
       end do
@@ -335,20 +333,20 @@ CONTAINS
    newcap = max(newcap,1)
    
    ! update everything
-   if (newcap  /= cap___ ) call set_capacity(x,newcap,keep___)
+   call set_capacity(x,newcap,keep___)
    do i = 1, 2
-      if (newlb(i)   /= lb___(i)  ) call set_lbound(x,i,newlb(i))
-      if (newsize(i) /= size___(i)) call set_size(x,i,newsize(i))
+      call set_lbound(x,i,newlb(i))
+      call set_size(x,i,newsize(i))
    end do
    
    ! copy the extend content
-   if (present(extend)) x(:,newlb(2)+size___(2):newlb(2)+newsize(2)-1) = extend(:,:)
+   if (present(extend)) x(:,newlb(2)+oldsize(2):newlb(2)+newsize(2)-1) = extend(:,:)
    ! copy the source content
    if (present(source)) then
       select rank(source)
       rank(0)
          if (keep___) then
-            x(:,newlb(2)+size___(2):newlb(2)+newsize(2)-1) = source
+            x(:,newlb(2)+oldsize(2):newlb(2)+newsize(2)-1) = source
          else
             x(:,:) = source
          end if
