@@ -24,8 +24,11 @@ int ea_capacity(CFI_cdesc_t* x) {
 // prints some informations
 extern "C"
 void ea_printInfo(CFI_cdesc_t*  x) {
-    printf("lbound = %d\n",x->dim[0].lower_bound);
-    printf("size = %d\n",x->dim[0].extent);
+    printf("rank = %d\n",x->rank);
+    for (int r=0; r < x->rank; r++) {
+        printf("lbound%d = %d\n",r+1,x->dim[r].lower_bound);
+        printf("size%d = %d\n",r+1,x->dim[r].extent);
+    }
     printf("address = %p %p\n",x->base_addr,NULL);
 }
 
@@ -33,7 +36,9 @@ void ea_printInfo(CFI_cdesc_t*  x) {
 extern "C"
 void ea_alloc(CFI_cdesc_t*  x,
               int*          c) {
-    int cc = MAX(x->dim[0].extent,1);
+    int cc=1;
+    for (int r=0; r < x->rank; r++) cc *= x->dim[r].extent;
+    cc = MAX(cc,1);
     cc = (c == NULL ? cc : MAX(cc,*c));
     free(x->base_addr);
     x->base_addr = malloc(cc * sizeof(float));
@@ -43,15 +48,17 @@ void ea_alloc(CFI_cdesc_t*  x,
 // sets a new lower bound
 extern "C"
 void ea_setLBound(CFI_cdesc_t*  x,
-                int*          lb) {
-    x->dim[0].lower_bound = *lb;
+                  int*          r,
+                  int*          lb) {
+    x->dim[*r-1].lower_bound = *lb;
 }
 
 // sets a new size; the capacity is supposed to be enough; the size cannot be zero
 extern "C"
 void ea_setSize(CFI_cdesc_t*  x,
-              int*          newsize) {
-    x->dim[0].extent = *newsize;
+                int*          r,
+                int*          newsize) {
+    x->dim[*r-1].extent = *newsize;
 }
 
 // sets a new capacity; free/malloc occur
@@ -62,7 +69,10 @@ void ea_setCapacity(CFI_cdesc_t*  x,
     float* tmp = (float*)malloc(*newcap * sizeof(float));
     if (keep) {
         int n = MIN(*newcap,ea_capacity(x));
-        n = MIN(n,x->dim[0].extent);
+        int size = 1;
+        for (int r=0; r < x->rank; r++) size *= x->dim[r].extent;
+        size = MAX(size,1);
+        n = MIN(n,size);
         for (int i=0; i<n; i++) tmp[i] = ((float*)x->base_addr)[i];
     }
     capamap.erase(capamap.find(x->base_addr));

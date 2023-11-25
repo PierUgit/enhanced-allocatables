@@ -33,6 +33,13 @@ TESTED SUCCESSFULLY WITH:
 **DOES NOT WORK WITH:**
 - ifort/icpc 21 on Linux db11
 
+## compilation
+
+```
+gfortran -c -O3 enhanced_allocatables.f90 eatest.f90                            && \
+g++ -O3 -lgfortran enhanced_allocatables.o eatest.o enhanced_allocatables_c.cpp
+```
+
 ## Specifications
 
 - Similarly to C++ vectors, the enhanced Fortran allocatable arrays have a *capacity* property, corresponding to the actually allocated memory volume. The capacity is larger or equal to the size, and the difference `capacity - size` is the overprovisioning
