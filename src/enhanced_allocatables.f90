@@ -378,6 +378,10 @@ CONTAINS
       if (present(lb).and.present(ub)) &
          error stop "lb= and ub= must not be both present if extend= or drop= are present"
    end if
+   if (present(extend)) then
+      if (rank(extend) < r-1 .or rank(extend) > r) &
+         error stop "the rank of extend= must be equal to rank(x) or rank(x)-1" 
+   end if
 
    end subroutine
    
