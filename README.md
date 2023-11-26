@@ -81,7 +81,7 @@ Wrapper to the standard `allocate` statement. The capacity can be specified, oth
 - cannot be coded together with `capacity=`
 
 `extend=e`
-- `e` is a rank-1 array that is appended to `array`
+- `e` is a scalar or a rank-1 array that is appended to `array`
 - the size of `array` is increased accordindly
 - `lb=` and `ub=` must not be coded together in this case
 - cannot be coded together with `drop=`
