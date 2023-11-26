@@ -4,7 +4,8 @@ USE enhanced_allocatables_m
 implicit none
 
 real, allocatable :: a(:), b(:)
-integer :: i, cap, newcap
+real :: x
+integer :: i, k, cap, newcap
 integer(int64) :: location, newlocation
 integer(int64) :: tic, toc
 real :: rate
@@ -27,19 +28,19 @@ print*, lbound(a), size(a), capa(a), a(2)
 
 ! modify the bounds
 call resize(a,lb=-2,keep=.true.)
-print*, lbound(a), size(a), capa(a), a(2)
+print*, lbound(a), size(a), capa(a), a(-1)
 
 ! modify the size
 call resize(a,lb=-2,ub=15,keep=.true.)
-print*, lbound(a), size(a), capa(a), a(2)
+print*, lbound(a), size(a), capa(a), a(-1)
 
 ! append elements
 call resize(a,keep=.true.,extend=[100.0, 200.0, 300.0])
-print*, lbound(a), size(a), capa(a), a(ubound(a,1))
+print*, lbound(a), size(a), capa(a), a(-1), a(ubound(a,1))
 
 ! reset the capacity to fit the size
 call resize(a,keep=.true.,container='fit')
-print*, lbound(a), size(a), capa(a), a(ubound(a,1))
+print*, lbound(a), size(a), capa(a), a(-1), a(ubound(a,1))
 
 call edeallocate(a)
 
@@ -84,13 +85,19 @@ do i = 1, 100000
       print*, "size = ", size(a), "   capacity changed from", cap, " to:", newcap
       cap = newcap
    end if
+   call random_number(x); k = ceiling(x*i)
+   if (nint(a(k)) /= k) error stop "Problem while growing 1 by 1"
 end do
-do i = 1, 100000
+do i = 100000, 1, -1
    call resize(a,drop=1,container='any')
    newcap = capa(a)
    if (newcap /= cap) then
       print*, "size = ", size(a), "   capacity changed from", cap, " to:", newcap
       cap = newcap
+   end if
+   if (i /= 1) then
+      call random_number(x); k = ceiling(x*size(a))
+      if (nint(a(k)) /= k) error stop "Problem while shrinking 1 by 1"
    end if
 end do
 call edeallocate(a)
@@ -102,24 +109,26 @@ print*, "====== WITH A ENHANCED ALLOCATABLE"
 print*, "starts with size=1"
 print*, "iteratively triples the size"
 print*, "then iteratively drop 2/3 of the elements"
-call eallocate(a,lb=0,ub=0)
-a(0) = 42.0
+call eallocate(a,lb=1,ub=1)
+a(1) = 0.0
 do i = 1, 11
+    ! call resize(a,lb=1,ub=3*size(a),keep=.true.,source=42.0) ! why doesn't it work ??
    call resize(a,lb=1,ub=3*size(a),keep=.true.)
-   a(size(a)/3+1: ) = 42.0
+   a(size(a)/3+1: ) = real(i)
    newcap = capa(a)
    if (newcap /= cap) then
       print*, "size = ", size(a), "   capacity changed from", cap, " to:", newcap
       cap = newcap
    end if
 end do
-do i = 1, 11
+do i = 11, 1, -1
    call resize(a,drop=2*size(a)/3,container='any')
    newcap = capa(a)
    if (newcap /= cap) then
       print*, "size = ", size(a), "   capacity changed from", cap, " to:", newcap
       cap = newcap
    end if
+   if (nint(a(size(a))) /= i-1) error stop "Problem while shrinking by 2/3"
 end do
 
 END
