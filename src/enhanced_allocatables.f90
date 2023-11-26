@@ -8,6 +8,7 @@ implicit none
    PUBLIC eallocate, resize, edeallocate, capa, print_info
    
    integer, parameter :: MAX_OVERP = 2*10**4
+   integer, parameter :: BLOCK = 4
    
    INTERFACE eallocate
       MODULE PROCEDURE eallocate1, eallocate2
@@ -75,9 +76,13 @@ CONTAINS
    real, allocatable, intent(inout)           :: x(:)
    integer,           intent(in)              :: lb, ub
    integer,           intent(in),    optional :: capacity
+   integer :: cap
    !********************************************************************************************
    allocate( x(lb:ub) )
-   call alloc(x,capacity)
+   cap = max(size(x),1)
+   if (present(capacity)) cap = max(cap,capacity)
+   cap = cap - 1 + BLOCK - mod(cap-1,BLOCK)
+   call alloc(x,cap)
   
    end subroutine
    
@@ -94,9 +99,13 @@ CONTAINS
    real, allocatable, intent(inout)           :: x(:,:)
    integer,           intent(in)              :: lb1, ub1, lb2, ub2
    integer,           intent(in),    optional :: capacity
+   integer :: cap
    !********************************************************************************************
    allocate( x(lb1:ub1,lb2:ub2) )
-   call alloc(x,capacity)
+   cap = max(size(x),1)
+   if (present(capacity)) cap = max(cap,capacity)
+   cap = cap - 1 + BLOCK - mod(cap-1,BLOCK)
+   call alloc(x,cap)
   
    end subroutine
    
@@ -117,41 +126,11 @@ CONTAINS
    real, allocatable, intent(in),     optional :: source(..)
    
    integer :: newlb, oldsize, newsize, newcap
-   logical(c_bool) :: keep___
+   logical(c_bool) :: ckeep
    character(8) :: con
    !********************************************************************************************
-   keep___ = .false. ; if (present(keep)) keep___ = keep
-   con = 'grow'; if (present(container)) con = container
-   
-   if (present(capacity).and.present(container)) &
-      error stop "capacity= and container= are mutually exclusive"
-   if (present(extend).and.present(drop)) &
-      error stop "extend= and drop= are mutually exclusive"
-   if ((present(extend).or.present(drop)).and..not.keep___) &
-      error stop "keep must be .true. is extend= or drop= are present"
-   if (present(mold)) then
-      if (present(lb).or.present(ub)) &
-         error stop "lb=/ub= must not be present if mold= is present"
-      if (present(extend).or.present(drop)) &
-         error stop "extend=/drop= must not be present if mold= is present"
-   end if
-   if (present(source)) then
-      if (rank(source) == 1) then
-         if (present(lb).or.present(ub)) &
-            error stop "lb=/ub= must not be present if source= is rank 1"
-         if (present(extend).or.present(drop)) &
-            error stop "extend=/drop= must not be present if source= is rank 1"
-         if (keep___) &
-            error stop "keep= must be .false. if source= is rank 1"
-      else if (rank(source) > 1) then
-         error stop "source= must be rank 0 or 1"
-      end if
-   end if
-   if ((present(extend).or.present(drop))) then
-      if (present(lb).and.present(ub)) &
-         error stop "lb1= and ub1= must not be both present if extend= or drop= are present"
-   end if
-
+   call check_args(1,ckeep,con,lb,ub,keep,capacity,container,extend,drop,mold,source)
+      
    newsize = size(x)     ; oldsize = newsize;    
    newcap  = capa(x)
    newlb   = lbound(x,1)
@@ -200,9 +179,10 @@ CONTAINS
       if (newsize < newcap - 3*MAX_OVERP/2) newcap = newsize + MAX_OVERP
    end if
    newcap = max(newcap,1)
+   newcap = newcap - 1 + BLOCK - mod(newcap-1,BLOCK)
    
    ! update everything
-   call set_capacity(x,newcap,keep___)
+   call set_capacity(x,newcap,ckeep)
    call set_lbound(x,1,newlb)
    call set_size(x,1,newsize)
    
@@ -212,7 +192,7 @@ CONTAINS
    if (present(source)) then
       select rank(source)
       rank(0)
-         if (keep___) then
+         if (ckeep) then
             x(newlb+oldsize:newlb+newsize-1) = source
          else
             x(:) = source
@@ -240,43 +220,16 @@ CONTAINS
    real, allocatable, intent(in),     optional :: source(..)
    
    integer :: newlb(2), oldsize(2), newsize(2), newcap, i
-   logical(c_bool) :: keep___
+   logical(c_bool) :: ckeep
    character(8) :: con
    !********************************************************************************************
-   keep___ = .false. ; if (present(keep)) keep___ = keep
-   con = 'grow'; if (present(container)) con = container
-   
-   if (present(capacity).and.present(container)) &
-      error stop "capacity= and container= are mutually exclusive"
-   if (present(extend).and.present(drop)) &
-      error stop "extend= and drop= are mutually exclusive"
-   if ((present(extend).or.present(drop)).and..not.keep___) &
-      error stop "keep must be .true. is extend= or drop= are present"
-   if (present(mold)) then
-      if (present(lb1).or.present(ub1).or.present(lb2).or.present(ub2)) &
-         error stop "lb=/ub= must not be present if mold= is present"
-      if (present(extend).or.present(drop)) &
-         error stop "extend=/drop= must not be present if mold= is present"
+   call check_args(2,ckeep,con,lb1,ub1,keep,capacity,container,extend,drop,mold,source)
+   call check_args(2,ckeep,con,lb2,ub2,keep,capacity,container,extend,drop,mold,source)
+   if (present(extend)) then
+      if (size(extend,1) /= size(x,1)) &
+         error stop "size(extend,1) is not equal to size(x,1)"
    end if
-   if (present(source)) then
-      if (rank(source) == 2) then
-         if (present(lb1).or.present(ub1).or.present(lb2).or.present(ub2)) &
-            error stop "lb=/ub= must not be present if source= is rank 2"
-         if (present(extend).or.present(drop)) &
-            error stop "extend=/drop= must not be present if source= is rank 2"
-         if (keep___) &
-            error stop "keep= must be .false. if source= is rank 2"
-      else if (rank(source) /= 0) then
-         error stop "source= must be rank 0 or 2"
-      end if
-   end if
-   if ((present(extend).or.present(drop))) then
-      if (present(lb1).and.present(ub1)) &
-         error stop "lb1= and ub1= must not be both present if extend= or drop= are present"
-      if (present(lb2).and.present(ub2)) &
-         error stop "lb2= and ub2= must not be both present if extend= or drop= are present"
-   end if
-   
+
    newsize = shape(x) ; oldsize = shape(x);
    newcap  = capa(x)             
    newlb   = lbound(x)
@@ -331,9 +284,10 @@ CONTAINS
       if (product(newsize) < newcap - 3*MAX_OVERP/2) newcap = product(newsize) + MAX_OVERP
    end if
    newcap = max(newcap,1)
+   newcap = newcap - 1 + BLOCK - mod(newcap-1,BLOCK)
    
    ! update everything
-   call set_capacity(x,newcap,keep___)
+   call set_capacity(x,newcap,ckeep)
    do i = 1, 2
       call set_lbound(x,i,newlb(i))
       call set_size(x,i,newsize(i))
@@ -345,7 +299,7 @@ CONTAINS
    if (present(source)) then
       select rank(source)
       rank(0)
-         if (keep___) then
+         if (ckeep) then
             x(:,newlb(2)+oldsize(2):newlb(2)+newsize(2)-1) = source
          else
             x(:,:) = source
@@ -356,7 +310,64 @@ CONTAINS
    end if
    
    end subroutine
-      !********************************************************************************************
+      
+   
+   !********************************************************************************************
+   subroutine check_args(r,ckeep,con,lb,ub,keep,capacity,container,extend,drop,mold,source)
+   !********************************************************************************************
+   ! simulation of the new resize statement
+   !********************************************************************************************
+   integer,           intent(in)               :: r
+   logical(c_bool),   intent(out)              :: ckeep
+   character(*),      intent(out)              :: con
+   integer,           intent(in),     optional :: lb, ub
+   logical,           intent(in),     optional :: keep
+   integer,           intent(in),     optional :: capacity
+   character(*),      intent(in),     optional :: container
+   real,              intent(in),     optional :: extend(..)
+   integer,           intent(in),     optional :: drop
+   real, allocatable, intent(in),     optional :: mold(..)
+   real, allocatable, intent(in),     optional :: source(..)
+   
+   character(96) :: msg
+   !********************************************************************************************
+   ckeep = present(extend).or.present(drop)
+   if (present(keep)) ckeep = keep
+   con = 'grow'; if (present(container)) con = container
+   
+   if (present(capacity).and.present(container)) &
+      error stop "capacity= and container= are mutually exclusive"
+   if (present(extend).and.present(drop)) &
+      error stop "extend= and drop= are mutually exclusive"
+   if ((present(extend).or.present(drop)).and..not.ckeep) &
+      error stop "keep must be .true. is extend= or drop= are present"
+   if (present(mold)) then
+      if (present(lb).or.present(ub)) &
+         error stop "lb=/ub= must not be present if mold= is present"
+      if (present(extend).or.present(drop)) &
+         error stop "extend=/drop= must not be present if mold= is present"
+   end if
+   if (present(source)) then
+      if (rank(source) == r) then
+         if (present(lb).or.present(ub)) &
+            error stop "lb=/ub= must not be present if source= is not a scalar"
+         if (present(extend).or.present(drop)) &
+            error stop "extend=/drop= must not be present if source= is not a scalar"
+         if (ckeep) &
+            error stop "keep= must be .false. if source= is not a scalar"
+      else if (rank(source) /= 0) then
+         write(msg,*) "source= must be rank 0 or", r
+         error stop msg
+      end if
+   end if
+   if ((present(extend).or.present(drop))) then
+      if (present(lb).and.present(ub)) &
+         error stop "lb= and ub= must not be both present if extend= or drop= are present"
+   end if
+
+   end subroutine
+   
+!********************************************************************************************
    subroutine edeallocate(x)
    !********************************************************************************************
    real, allocatable, intent(inout) :: x(..)   

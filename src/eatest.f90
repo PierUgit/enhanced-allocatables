@@ -78,7 +78,7 @@ call system_clock(tic,rate)
 call eallocate(a,lb=1,ub=0)
 cap = capa(a)
 do i = 1, 100000
-   call resize(a,keep=.true.,extend=[real(i)])
+   call resize(a,extend=[real(i)])
    newcap = capa(a)
    if (newcap /= cap) then
       print*, "size = ", size(a), "   capacity changed from", cap, " to:", newcap
@@ -86,7 +86,7 @@ do i = 1, 100000
    end if
 end do
 do i = 1, 100000
-   call resize(a,keep=.true.,drop=1,container='any')
+   call resize(a,drop=1,container='any')
    newcap = capa(a)
    if (newcap /= cap) then
       print*, "size = ", size(a), "   capacity changed from", cap, " to:", newcap
@@ -114,7 +114,7 @@ do i = 1, 11
    end if
 end do
 do i = 1, 11
-   call resize(a,keep=.true.,drop=2*size(a)/3,container='any')
+   call resize(a,drop=2*size(a)/3,container='any')
    newcap = capa(a)
    if (newcap /= cap) then
       print*, "size = ", size(a), "   capacity changed from", cap, " to:", newcap

@@ -67,7 +67,7 @@ Wrapper to the standard `allocate` statement. The capacity can be specified, oth
 - if both are coded the size is potentially modified, and so is the capacity
 
 `keep=k`
-- `k` is a logical scalar that is `.false.` by default. 
+- `k` is a logical scalar that is `.true` by default if `extend=` or `drop=` are coded, and `.false.` otherwise 
 - If `.true.`, the content of the array is kept whenever the array has te be reallocated under the hood
 
 `capacity=c`
