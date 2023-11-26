@@ -78,7 +78,7 @@ call system_clock(tic,rate)
 call eallocate(a,lb=1,ub=0)
 cap = capa(a)
 do i = 1, 100000
-   call resize(a,extend=[real(i)])
+   call resize(a,extend=real(i))
    newcap = capa(a)
    if (newcap /= cap) then
       print*, "size = ", size(a), "   capacity changed from", cap, " to:", newcap

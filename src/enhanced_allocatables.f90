@@ -120,7 +120,7 @@ CONTAINS
    logical,           intent(in),     optional :: keep
    integer,           intent(in),     optional :: capacity
    character(*),      intent(in),     optional :: container
-   real,              intent(in),     optional :: extend(:)
+   real,              intent(in),     optional :: extend(..)
    integer,           intent(in),     optional :: drop
    real, allocatable, intent(in),     optional :: mold(:)
    real, allocatable, intent(in),     optional :: source(..)
@@ -187,7 +187,14 @@ CONTAINS
    call set_size(x,1,newsize)
    
    ! copy the extend content
-   if (present(extend)) x(newlb+oldsize:newlb+newsize-1) = extend(:)
+   if (present(extend)) then
+      select rank(extend)
+      rank(0)
+         x(newlb+oldsize:newlb+newsize-1) = extend
+      rank(1)
+         x(newlb+oldsize:newlb+newsize-1) = extend(:)
+      end select
+   end if
    ! copy the source content
    if (present(source)) then
       select rank(source)
@@ -214,7 +221,7 @@ CONTAINS
    logical,           intent(in),     optional :: keep
    integer,           intent(in),     optional :: capacity
    character(*),      intent(in),     optional :: container
-   real,              intent(in),     optional :: extend(:,:)
+   real,              intent(in),     optional :: extend(..)
    integer,           intent(in),     optional :: drop
    real, allocatable, intent(in),     optional :: mold(:,:)
    real, allocatable, intent(in),     optional :: source(..)
@@ -294,7 +301,14 @@ CONTAINS
    end do
    
    ! copy the extend content
-   if (present(extend)) x(:,newlb(2)+oldsize(2):newlb(2)+newsize(2)-1) = extend(:,:)
+   if (present(extend)) then
+      select rank(extend)
+      rank(1)
+         x(:,newlb(2)+newsize(2)-1) = extend(:)
+      rank(2)
+         x(:,newlb(2)+oldsize(2):newlb(2)+newsize(2)-1) = extend(:,:)
+      end select
+   end if
    ! copy the source content
    if (present(source)) then
       select rank(source)
@@ -367,7 +381,7 @@ CONTAINS
 
    end subroutine
    
-!********************************************************************************************
+   !********************************************************************************************
    subroutine edeallocate(x)
    !********************************************************************************************
    real, allocatable, intent(inout) :: x(..)   
