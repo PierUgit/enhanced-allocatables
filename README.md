@@ -110,18 +110,12 @@ Wrapper to the standard `allocate` statement. The capacity can be specified, oth
 - implies `keep=.true.`
 
 `mold=m`
-- works exactly like in the current `allocate` statement
+- works exactly like in the standard `allocate` statement
 - `lb=`, `ub=`, `extend=`, and `drop=` must not be coded with `mold=`
 
 `source=s`
-- works *almost* exactly like in the current `allocate` statement
-- if `s` is a scalar
-  - if keep=.false., then `s` is used to fill the entire resized array
-  - if `keep=.true`, `s` is used to fill the new part of the resized array if it is enlarged
-- if `s` is an array of the same rank than `array`
-  - `s` determines the new lower and upper bounds of `array`
-  - the content of `s` is copied to `array`
-  - `lb=`, `ub=`, and `keep=` must not be coded in this case
+- works *almost* exactly like in the standard `allocate` statement, but:
+  - if `s` is a scalar and `keep=.true`, then `s` is used to fill only the new part of the resized array if it is enlarged
 - `extend=`, and `drop=` must not be coded with `source=`
 
 ### edeallocate()
