@@ -122,8 +122,8 @@ CONTAINS
    character(*),      intent(in),     optional :: container
    real,              intent(in),     optional :: extend(..)
    integer,           intent(in),     optional :: drop
-   real, allocatable, intent(in),     optional :: mold(:)
-   real, allocatable, intent(in),     optional :: source(..)
+   real,              intent(in),     optional :: mold(:)
+   real,              intent(in),     optional :: source(..)
    
    integer :: newlb, oldsize, newsize, newcap
    logical(c_bool) :: ckeep
@@ -223,8 +223,8 @@ CONTAINS
    character(*),      intent(in),     optional :: container
    real,              intent(in),     optional :: extend(..)
    integer,           intent(in),     optional :: drop
-   real, allocatable, intent(in),     optional :: mold(:,:)
-   real, allocatable, intent(in),     optional :: source(..)
+   real,              intent(in),     optional :: mold(:,:)
+   real,              intent(in),     optional :: source(..)
    
    integer :: newlb(2), oldsize(2), newsize(2), newcap, i
    logical(c_bool) :: ckeep
@@ -340,8 +340,8 @@ CONTAINS
    character(*),      intent(in),     optional :: container
    real,              intent(in),     optional :: extend(..)
    integer,           intent(in),     optional :: drop
-   real, allocatable, intent(in),     optional :: mold(..)
-   real, allocatable, intent(in),     optional :: source(..)
+   real,              intent(in),     optional :: mold(..)
+   real,              intent(in),     optional :: source(..)
    
    character(96) :: msg
    !********************************************************************************************

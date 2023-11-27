@@ -31,7 +31,7 @@ call resize(a,lb=-2,keep=.true.)
 print*, lbound(a), size(a), capa(a), a(-1)
 
 ! modify the size
-call resize(a,lb=-2,ub=15,keep=.true.)
+call resize(a,lb=-2,ub=15,keep=.true.,source=0.0)
 print*, lbound(a), size(a), capa(a), a(-1)
 
 ! append elements
@@ -112,9 +112,7 @@ print*, "then iteratively drop 2/3 of the elements"
 call eallocate(a,lb=1,ub=1)
 a(1) = 0.0
 do i = 1, 11
-    ! call resize(a,lb=1,ub=3*size(a),keep=.true.,source=42.0) ! why doesn't it work ??
-   call resize(a,lb=1,ub=3*size(a),keep=.true.)
-   a(size(a)/3+1: ) = real(i)
+   call resize(a,lb=1,ub=3*size(a),keep=.true.,source=real(i))
    newcap = capa(a)
    if (newcap /= cap) then
       print*, "size = ", size(a), "   capacity changed from", cap, " to:", newcap
