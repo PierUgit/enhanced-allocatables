@@ -130,7 +130,13 @@ CONTAINS
    logical(c_bool) :: ckeep
    character(8) :: con
    !********************************************************************************************
+#ifndef IFORT
    call check_args(1,ckeep,con,lb,ub,keep,capacity,container,extend,drop,mold,source)
+#else
+   ckeep = present(extend).or.present(drop)
+   if (present(keep)) ckeep = keep
+   con = 'grow'; if (present(container)) con = container
+#endif
 
    newsize = size(x)     ; oldsize = newsize;    
    newcap  = capa(x)
@@ -231,8 +237,14 @@ CONTAINS
    logical(c_bool) :: ckeep
    character(8) :: con
    !********************************************************************************************
+#ifndef IFORT
    call check_args(2,ckeep,con,lb1,ub1,keep,capacity,container,extend,drop,mold,source)
    call check_args(2,ckeep,con,lb2,ub2,keep,capacity,container,extend,drop,mold,source)
+#else
+   ckeep = present(extend).or.present(drop)
+   if (present(keep)) ckeep = keep
+   con = 'grow'; if (present(container)) con = container
+#endif
    if (present(extend)) then
       if (size(extend,1) /= size(x,1)) &
          error stop "size(extend,1) is not equal to size(x,1)"
