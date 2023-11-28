@@ -78,11 +78,12 @@ CONTAINS
    integer,           intent(in),    optional :: capacity
    integer :: cap
    !********************************************************************************************
-   allocate( x(lb:ub) )
    cap = max(size(x),1)
    if (present(capacity)) cap = max(cap,capacity)
    cap = cap - 1 + BLOCK - mod(cap-1,BLOCK)
    call alloc(x,cap)
+   call set_lbound(x,1,lb)
+   call set_size(x,1,ub-lb+1)
   
    end subroutine
    
@@ -130,7 +131,7 @@ CONTAINS
    character(8) :: con
    !********************************************************************************************
    call check_args(1,ckeep,con,lb,ub,keep,capacity,container,extend,drop,mold,source)
-      
+
    newsize = size(x)     ; oldsize = newsize;    
    newcap  = capa(x)
    newlb   = lbound(x,1)
@@ -391,12 +392,6 @@ CONTAINS
    real, allocatable, intent(inout) :: x(..)   
    !********************************************************************************************
    call dealloc(x)
-   select rank(x)
-   rank(1)
-      deallocate(x)
-   rank(2)
-      deallocate(x)
-   end select
    
    end subroutine
    

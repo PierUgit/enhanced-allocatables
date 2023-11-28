@@ -33,17 +33,14 @@ void ea_printInfo(CFI_cdesc_t*  x) {
     printf("address = %p %p\n",x->base_addr,NULL);
 }
 
-// "allocates" the array; actually Fortran allocate() must have been called before
+// "allocates" the array
 extern "C"
 void ea_alloc(CFI_cdesc_t*  x,
               int*          c) {
-    int cc=1;
-    for (int r=0; r < x->rank; r++) cc *= x->dim[r].extent;
-    cc = MAX(cc,1);
-    cc = (c == NULL ? cc : MAX(cc,*c));
-    free(x->base_addr);
-    x->base_addr = malloc(cc * sizeof(float));
-    capamap.insert({x->base_addr,cc});
+    CFI_index_t lb[1] = {1};
+    CFI_index_t ub[1] = {*c};
+    CFI_allocate(x,lb,ub,0);
+    capamap.insert({x->base_addr,*c});
 }
 
 // sets a new lower bound
@@ -67,26 +64,31 @@ extern "C"
 void ea_setCapacity(CFI_cdesc_t*  x,
                     int*          newcap,
                     bool*         keep) {
-    if (*newcap == capamap[x->base_addr]) return;    
-    void* tmp = malloc(*newcap * sizeof(float));
+    if (*newcap == capamap[x->base_addr]) return;
+    
+    CFI_CDESC_T(1) y_;
+    CFI_cdesc_t* y = (CFI_cdesc_t*)&y_;
+    CFI_establish(y,NULL,CFI_attribute_allocatable,CFI_type_float,0,1,NULL);
+    CFI_index_t lb[1] = {1};
+    CFI_index_t ub[1] = {*newcap};
+    CFI_allocate(y,lb,ub,0);
     if (keep) {
         int n = MIN(*newcap,ea_capacity(x));
         int size = 1;
         for (int r=0; r < x->rank; r++) size *= x->dim[r].extent;
         size = MAX(size,1);
         n = MIN(n,size);
-        memcpy(tmp,x->base_addr,n*sizeof(float));
+        memcpy(y->base_addr,x->base_addr,n*sizeof(float));
     }
     capamap.erase(capamap.find(x->base_addr));
-    free(x->base_addr);
-    x->base_addr = tmp;
+    std::swap(x->base_addr,y->base_addr);
     capamap.insert({x->base_addr,*newcap});
+    CFI_deallocate(y);
 }
 
 // "deallocates" the array; Fortran deallocate() must be called after
 extern "C"
 void ea_deAlloc(CFI_cdesc_t*  x) {
     capamap.erase(capamap.find(x->base_addr));
-    //free(x->base_addr);
-    //x->base_addr = malloc(x->dim[0].extent * sizeof(float));
+    CFI_deallocate(x);
 }
