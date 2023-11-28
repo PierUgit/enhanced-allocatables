@@ -24,14 +24,15 @@ Limitations of the demonstration code:
 - rank-1 and rank-2 only (the generalization to any rank is trivial)
 - size and capacity limited to default integer values
 - not thread-safe
-- The reallocatable/resizable features are achieved by directly manipulating the C array descriptors in the framework of the C interoperability: **this is non standard, and therefore not guaranteed to be portable !** 
+- The reallocatable/resizable features are achieved by directly manipulating the C array descriptors in the framework of the C interoperability: **this is a violation of the API, and therefore not guaranteed to be portable !** 
 
 TESTED SUCCESSFULLY WITH:
 - gfortran/g++ 13 on macOS 10.13
 - gfortran/g++ 10 on Linux db11
+- ifort/icpc 21 on Linux db11 (although with a bug; workaround: compile with `-DIFORT)
 
 **DOES NOT WORK WITH:**
-- ifort/icpc 21 on Linux db11; probably because ifort doesn't use malloc/free, but rather another allocator.
+- ...
 
 ## compilation
 
