@@ -23,6 +23,7 @@ Limitations of the demonstration code:
 - default real kind only (the generalization to any kind is trivial)
 - rank-1 and rank-2 only (the generalization to any rank is trivial)
 - size and capacity limited to default integer values
+- `mold=` and `source=` limited to allocatable argument, as this is the only way to get lower bounds /= 1
 - not thread-safe
 - The reallocatable/resizable features are achieved by directly manipulating the C array descriptors in the framework of the C interoperability: **this is a violation of the API, and therefore not guaranteed to be portable !** 
 
