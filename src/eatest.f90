@@ -3,12 +3,16 @@ USE iso_fortran_env
 USE enhanced_allocatables_m
 implicit none
 
-real, allocatable :: a(:), b(:)
+real, allocatable :: ZERO, S
+real, allocatable :: a(:), aa(:,:), bb(:,:)
 real :: x
 integer :: i, k, cap, newcap, count
 integer(int64) :: location, newlocation
 integer(int64) :: tic, toc
 real :: rate
+
+allocate( ZERO, S)
+ZERO = 0.0
 
 print*, "Testing C descriptors for different cases of allocatable arrays"
 print*, "unallocated"
@@ -30,7 +34,7 @@ print*, "Setting the lower bound to -2"
 call resize(a,lb=-2,keep=.true.)
 print*, lbound(a), size(a), capa(a), a(-1)
 print*, "increase the size to 18"
-call resize(a,lb=-2,ub=15,keep=.true.,source=0.0)
+call resize(a,lb=-2,ub=15,keep=.true.,source=ZERO)
 print*, lbound(a), size(a), capa(a), a(-1)
 print*, "append 3 elements 100 200 300"
 call resize(a,keep=.true.,extend=[100.0, 200.0, 300.0])
@@ -114,7 +118,7 @@ print*, "then iteratively drop 2/3 of the elements"
 call eallocate(a,lb=1,ub=1)
 a(1) = 0.0
 do i = 1, 11
-   call resize(a,lb=1,ub=3*size(a),keep=.true.,source=real(i))
+   S=real(i); call resize(a,lb=1,ub=3*size(a),keep=.true.,source=S)
    newcap = capa(a)
    if (newcap /= cap) then
       print*, "size = ", size(a), "   capacity changed from", cap, " to:", newcap
@@ -130,5 +134,24 @@ do i = 11, 1, -1
    end if
    if (nint(a(size(a))) /= i-1) error stop "Problem while shrinking by 2/3"
 end do
+call edeallocate(a)
+
+print*
+print*, "====== WITH A 2D ENHANCED ALLOCATABLE"
+print*, "starts with size=0"
+call eallocate(aa,1,0,1,0)
+print*, lbound(aa), shape(aa), capa(aa)
+allocate( bb(0:999,5) )
+print*, "resize with mold(0:999,5)"
+call resize(aa,mold=bb) 
+print*, lbound(aa), shape(aa), capa(aa)
+deallocate(bb); allocate( bb(500,-10:10), source=42.0 )
+print*, "resize with source(500,-10,10)"
+call resize(aa,source=bb) 
+print*, lbound(aa), shape(aa), capa(aa), aa(250,0)
+if (any(aa /= 42.0)) ERROR STOP "problem with source="
+call edeallocate( aa )
+
+
 
 END

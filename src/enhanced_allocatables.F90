@@ -102,11 +102,14 @@ CONTAINS
    integer,           intent(in),    optional :: capacity
    integer :: cap
    !********************************************************************************************
-   allocate( x(lb1:ub1,lb2:ub2) )
    cap = max(size(x),1)
    if (present(capacity)) cap = max(cap,capacity)
    cap = cap - 1 + BLOCK - mod(cap-1,BLOCK)
    call alloc(x,cap)
+   call set_lbound(x,1,lb1)
+   call set_size(x,1,ub1-lb1+1)
+   call set_lbound(x,2,lb2)
+   call set_size(x,2,ub2-lb2+1)
   
    end subroutine
    
@@ -123,8 +126,8 @@ CONTAINS
    character(*),      intent(in),     optional :: container
    real,              intent(in),     optional :: extend(..)
    integer,           intent(in),     optional :: drop
-   real,              intent(in),     optional :: mold(:)
-   real,              intent(in),     optional :: source(..)
+   real, allocatable, intent(in),     optional :: mold(:)
+   real, allocatable, intent(in),     optional :: source(..)
    
    integer :: newlb, oldsize, newsize, newcap
    logical(c_bool) :: ckeep
@@ -230,8 +233,8 @@ CONTAINS
    character(*),      intent(in),     optional :: container
    real,              intent(in),     optional :: extend(..)
    integer,           intent(in),     optional :: drop
-   real,              intent(in),     optional :: mold(:,:)
-   real,              intent(in),     optional :: source(..)
+   real, allocatable, intent(in),     optional :: mold(:,:)
+   real, allocatable, intent(in),     optional :: source(..)
    
    integer :: newlb(2), oldsize(2), newsize(2), newcap, i
    logical(c_bool) :: ckeep
@@ -271,7 +274,7 @@ CONTAINS
    ! mold/source/extend/drop
    if (present(mold)) then
       newsize = shape(mold)
-      newlb = lbound(mold)
+      newlb = lbound(mold);
    else if (present(source)) then
       if (rank(source) == 2) then
          newsize = shape(source)
@@ -353,8 +356,8 @@ CONTAINS
    character(*),      intent(in),     optional :: container
    real,              intent(in),     optional :: extend(..)
    integer,           intent(in),     optional :: drop
-   real,              intent(in),     optional :: mold(..)
-   real,              intent(in),     optional :: source(..)
+   real, allocatable, intent(in),     optional :: mold(..)
+   real, allocatable, intent(in),     optional :: source(..)
    
    character(96) :: msg
    !********************************************************************************************
