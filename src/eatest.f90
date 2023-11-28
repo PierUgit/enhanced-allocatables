@@ -5,68 +5,70 @@ implicit none
 
 real, allocatable :: a(:), b(:)
 real :: x
-integer :: i, k, cap, newcap
+integer :: i, k, cap, newcap, count
 integer(int64) :: location, newlocation
 integer(int64) :: tic, toc
 real :: rate
 
-! Testing C descriptors for different cases of allocatable arrays
-! unallocated
+print*, "Testing C descriptors for different cases of allocatable arrays"
+print*, "unallocated"
 call print_info(a)
-! allocated size=0
+print*, "unallocated size=0"
 a = [real:: ]; call print_info(a)
-! allocated size>0
+print*, "unallocated size=1"
 a = [1.0]; call print_info(a)
 deallocate( a )
 ! With gfortran 13 at least, something is allocated even for a size=0
 
-
-! allocates with size=10 & capacity=15
+print*
+print*, "Testing enhanced allocables"
+print*, "allocates with size=10 & capacity=15"
 call eallocate(a,lb=1,ub=10,capacity=15)
 a(:) = [(real(i),i=1,size(a))]
 print*, lbound(a), size(a), capa(a), a(2)
-
-! modify the bounds
+print*, "Setting the lower bound to -2"
 call resize(a,lb=-2,keep=.true.)
 print*, lbound(a), size(a), capa(a), a(-1)
-
-! modify the size
+print*, "increase the size to 18"
 call resize(a,lb=-2,ub=15,keep=.true.)
 print*, lbound(a), size(a), capa(a), a(-1)
-
-! append elements
+print*, "append 3 elements 100 200 300"
 call resize(a,keep=.true.,extend=[100.0, 200.0, 300.0])
 print*, lbound(a), size(a), capa(a), a(-1), a(ubound(a,1))
-
-! reset the capacity to fit the size
+print*, "reset the capacity to fit the size"
 call resize(a,keep=.true.,container='fit')
 print*, lbound(a), size(a), capa(a), a(-1), a(ubound(a,1))
-
 call edeallocate(a)
 
 print*
 print*, "====== WITH A NORMAL ALLOCATABLE"
 print*, "starts with size=0"
-print*, "iteratively append 1 element, then iteratively drop 1 element"
+print*, "iteratively append 1 element 100000 times, then iteratively drop 1 element 1000000 times"
 call system_clock(tic,rate)
 allocate(a(0))
 location = loc(a)
+count = 0
 do i = 1, 100000
    a = [a,real(i)]
    newlocation = loc(a)
    if (newlocation /= location) then
-      print*, "size = ", size(a), "   location changed from", location, " to:", newlocation
-      location = newlocation
+      count = count+1 ! then
+   !   print*, "size = ", size(a), "   location changed from", location, " to:", newlocation
    end if
+   location = newlocation
 end do
+print*, "At least",count," reallocations during growing"
+count = 0 
 do i = 1, 100000
    a = a(1:size(a)-1)
    newlocation = loc(a)
    if (newlocation /= location) then
-      print*, "size = ", size(a), "   location changed from", location, " to:", newlocation
-      location = newlocation
+      count = count+1
+   !   print*, "size = ", size(a), "   location changed from", location, " to:", newlocation
    end if
+   location = newlocation
 end do
+print*, "At least",count," reallocations during shrinking"
 deallocate(a)
 call system_clock(toc,rate)
 print*, "Elapsed time =", (toc-tic)/rate
