@@ -38,7 +38,7 @@ TESTED SUCCESSFULLY WITH:
 ## compilation
 
 ```
-gfortran -c -O3 enhanced_allocatables.f90 eatest.f90                            && \
+gfortran -c -O3 enhanced_allocatables.F90 eatest.f90                            && \
 g++ -O3 -lgfortran enhanced_allocatables.o eatest.o enhanced_allocatables_c.cpp && \
 a.out
 ```
