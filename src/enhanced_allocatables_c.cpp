@@ -37,8 +37,8 @@ void ea_printInfo(CFI_cdesc_t*  x) {
 extern "C"
 void ea_alloc(CFI_cdesc_t*  x,
               int*          c) {
-    CFI_index_t lb[1] = {1};
-    CFI_index_t ub[1] = {*c};
+    CFI_index_t lb[2] = {1,1};
+    CFI_index_t ub[2] = {*c,1};
     CFI_allocate(x,lb,ub,0);
     capamap.insert({x->base_addr,*c});
 }
@@ -72,13 +72,12 @@ void ea_setCapacity(CFI_cdesc_t*  x,
     CFI_index_t lb[1] = {1};
     CFI_index_t ub[1] = {*newcap};
     CFI_allocate(y,lb,ub,0);
-    if (keep) {
-        int n = MIN(*newcap,ea_capacity(x));
-        int size = 1;
-        for (int r=0; r < x->rank; r++) size *= x->dim[r].extent;
-        size = MAX(size,1);
-        n = MIN(n,size);
-        memcpy(y->base_addr,x->base_addr,n*sizeof(float));
+    if (*keep) {
+        int n = 1;
+        for (int r=0; r < x->rank; r++) n *= x->dim[r].extent;
+        n = MIN(n,ea_capacity(x));
+        n = MIN(n,*newcap);
+        if (n > 0) memcpy(y->base_addr,x->base_addr,n*sizeof(float));
     }
     capamap.erase(capamap.find(x->base_addr));
     std::swap(x->base_addr,y->base_addr);

@@ -78,13 +78,18 @@ CONTAINS
    integer,           intent(in),    optional :: capacity
    integer :: cap
    !********************************************************************************************
-   cap = max(size(x),1)
+   cap = 1
    if (present(capacity)) cap = max(cap,capacity)
    cap = cap - 1 + BLOCK - mod(cap-1,BLOCK)
    call alloc(x,cap)
-   call set_lbound(x,1,lb)
-   call set_size(x,1,ub-lb+1)
-  
+   if (ub >= lb) then
+      call set_lbound(x,1,lb)
+      call set_size(x,1,ub-lb+1)
+   else
+      call set_lbound(x,1,1)
+      call set_size(x,1,0)
+   end if
+   
    end subroutine
    
    
@@ -102,14 +107,24 @@ CONTAINS
    integer,           intent(in),    optional :: capacity
    integer :: cap
    !********************************************************************************************
-   cap = max(size(x),1)
+   cap = 1
    if (present(capacity)) cap = max(cap,capacity)
    cap = cap - 1 + BLOCK - mod(cap-1,BLOCK)
    call alloc(x,cap)
-   call set_lbound(x,1,lb1)
-   call set_size(x,1,ub1-lb1+1)
-   call set_lbound(x,2,lb2)
-   call set_size(x,2,ub2-lb2+1)
+   if (ub1 >= lb1) then
+      call set_lbound(x,1,lb1)
+      call set_size(x,1,ub1-lb1+1)
+   else
+      call set_lbound(x,1,1)
+      call set_size(x,1,0)
+   end if
+   if (ub2 >= lb2) then
+      call set_lbound(x,2,lb2)
+      call set_size(x,2,ub2-lb2+1)
+   else
+      call set_lbound(x,2,1)
+      call set_size(x,2,0)
+   end if
   
    end subroutine
    
