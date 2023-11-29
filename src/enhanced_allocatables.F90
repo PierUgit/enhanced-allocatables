@@ -141,20 +141,18 @@ CONTAINS
    character(*),      intent(in),     optional :: container
    real,              intent(in),     optional :: extend(..)
    integer,           intent(in),     optional :: drop
-   real, allocatable, intent(in),     optional :: mold(:)
+   real, allocatable, intent(in),     optional :: mold(..) ! should be rank-1 only, but some issue with ifort
    real, allocatable, intent(in),     optional :: source(..)
    
    integer :: newlb, oldsize, newsize, newcap
    logical(c_bool) :: ckeep
    character(8) :: con
    !********************************************************************************************
-#ifndef IFORT
-   call check_args(1,ckeep,con,lb,ub,keep,capacity,container,extend,drop,mold,source)
-#else
    ckeep = present(extend).or.present(drop)
    if (present(keep)) ckeep = keep
    con = 'grow'; if (present(container)) con = container
-#endif
+
+   if (.not.allocated(x)) call eallocate(x,1,0)
 
    newsize = size(x)     ; oldsize = newsize;    
    newcap  = capa(x)
@@ -170,8 +168,11 @@ CONTAINS
 
    ! mold and source
    if (present(mold)) then
-      newsize = size(mold)
-      newlb = lbound(mold,1)
+      select rank(mold)
+      rank(1)
+         newsize = size(mold)
+         newlb = lbound(mold,1)
+      end select
    else if (present(source)) then
       if (rank(source) == 1) then
          newsize = size(source)
@@ -248,25 +249,21 @@ CONTAINS
    character(*),      intent(in),     optional :: container
    real,              intent(in),     optional :: extend(..)
    integer,           intent(in),     optional :: drop
-   real, allocatable, intent(in),     optional :: mold(:,:)
+   real, allocatable, intent(in),     optional :: mold(..) ! should be rank-2 only, but some issue with ifort
    real, allocatable, intent(in),     optional :: source(..)
    
    integer :: newlb(2), oldsize(2), newsize(2), newcap, i
    logical(c_bool) :: ckeep
    character(8) :: con
    !********************************************************************************************
-#ifndef IFORT
    call check_args(2,ckeep,con,lb1,ub1,keep,capacity,container,extend,drop,mold,source)
    call check_args(2,ckeep,con,lb2,ub2,keep,capacity,container,extend,drop,mold,source)
-#else
-   ckeep = present(extend).or.present(drop)
-   if (present(keep)) ckeep = keep
-   con = 'grow'; if (present(container)) con = container
-#endif
    if (present(extend)) then
       if (size(extend,1) /= size(x,1)) &
          error stop "size(extend,1) is not equal to size(x,1)"
    end if
+
+   if (.not.allocated(x)) call eallocate(x,1,0,1,0)
 
    newsize = shape(x) ; oldsize = shape(x);
    newcap  = capa(x)             
@@ -288,8 +285,11 @@ CONTAINS
 
    ! mold/source/extend/drop
    if (present(mold)) then
-      newsize = shape(mold)
-      newlb = lbound(mold);
+      select rank(mold)
+      rank(2)
+         newsize = shape(mold)
+         newlb = lbound(mold);
+      end select
    else if (present(source)) then
       if (rank(source) == 2) then
          newsize = shape(source)
@@ -387,6 +387,8 @@ CONTAINS
    if ((present(extend).or.present(drop)).and..not.ckeep) &
       error stop "keep must be .true. is extend= or drop= are present"
    if (present(mold)) then
+      if (rank(mold) /= r) &
+         error stop "mold= must have the same rank as array"
       if (present(lb).or.present(ub)) &
          error stop "lb=/ub= must not be present if mold= is present"
       if (present(extend).or.present(drop)) &

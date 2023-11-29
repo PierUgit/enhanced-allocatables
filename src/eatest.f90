@@ -82,8 +82,7 @@ print*, "====== WITH A ENHANCED ALLOCATABLE"
 print*, "starts with size=0"
 print*, "iteratively append 1 element, then iteratively drop 1 element"
 call system_clock(tic,rate)
-call eallocate(a,lb=1,ub=0)
-cap = capa(a)
+cap = 0
 do i = 1, 100000
    call resize(a,extend=real(i))
    newcap = capa(a)
