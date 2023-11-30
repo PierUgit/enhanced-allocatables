@@ -8,9 +8,7 @@ Objectives:
 - modifying the bounds of an allocated array
 
 It it was integrated to the langage, the proposal would add:
-- a *capacity* specifier to the `allocatable` statement
 
-`allocate( array([lb:]ub) [,capacity=c] )`
 - a `resize` statement with the `keep`, `capacity`, `container`, `extend`, `mold`, `source` specifiers
 
 `resize( array([lb]:[ub]) [,keep=k] [,capacity=c] [,container=con] [,extend=e] [,drop=d] [,mold=m] [,source=s])`
@@ -56,19 +54,18 @@ a.out
 
 ## Documentation
 
-### eallocate()
-`call eallocate(array , lb , ub [,mold=m | ,source=s] )`  
-`call eallocate(array , lb1 , ub1, lb2, ub2 [,mold=m | ,source=s] )`
-
-Simulation of the standard `allocate` statement. Is needed to initialize the management of the capacity. 
-
 ### resize
-`call resize( array [,lb=l] [,ub=u] [,keep=k] [,capacity=c |,container=con] [,extend=e | ,drop=d] [,mold=m | ,source=s] )`  
-`call resize( array [,lb1=l] [,ub1=u] [,lb2=l] [,ub2=u] [,keep=k] [,capacity=c |,container=con] [,extend=e | ,drop=d] [,mold=m | ,source=s] )
+`call resize( array [,lb=l] [,ub=u] [,keep=k] [,capacity=c |,container=con] [,extend=e | ,drop=d] [,mold=m | ,source=s] )`
+
+`call resize( array [,lb1=l1] [,ub1=u1] [,lb2=l2] [,ub2=u2] [,keep=k] [,capacity=c |,container=con] [,extend=e | ,drop=d] [,mold=m | ,source=s] )` 
 
 `array`
 - a rank-1 or rank-2 `REAL` array
-- has first to be allocated using `eallocate()`
+- can be already allocated or not on input
+- if the array has been previously allocated with the standard `allocate` statement, the first call to `resize` afterwards will always generate a free/malloc behavior even if not necessary. 
+  - This a limitation of the demonstration code because there's no way to know the capacity of an array that is allocate with `allocate`.
+  - a standard implementation of the proposal would not have this limitation
+  - the recommandation with the demonstration code is to use `resize` even for the initial allocation
 
 `lb=l` , `ub=u` 
 - `l` and `u` are the new lower and upper bounds.
