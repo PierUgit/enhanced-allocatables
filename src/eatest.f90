@@ -27,7 +27,7 @@ deallocate( a )
 print*
 print*, "Testing enhanced allocables"
 print*, "allocates with size=10 & capacity=15"
-call eallocate(a,lb=1,ub=10,capacity=15)
+call resize(a,lb=1,ub=10,capacity=15)
 a(:) = [(real(i),i=1,size(a))]
 print*, lbound(a), size(a), capa(a), a(2)
 print*, "Setting the lower bound to -2"
@@ -47,7 +47,7 @@ call edeallocate(a)
 print*
 print*, "====== WITH A NORMAL ALLOCATABLE"
 print*, "starts with size=0"
-print*, "iteratively append 1 element 100000 times, then iteratively drop 1 element 1000000 times"
+print*, "iteratively append 1 element 100000 times, then iteratively drop 1 element 100000 times"
 call system_clock(tic,rate)
 allocate(a(0))
 location = loc(a)

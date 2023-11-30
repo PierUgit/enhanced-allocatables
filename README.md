@@ -57,10 +57,10 @@ a.out
 ## Documentation
 
 ### eallocate()
-`call eallocate(array , lb , ub [,capacity=c] )`  
-`call eallocate(array , lb1 , ub1, lb2, ub2 [,capacity=c] )`
+`call eallocate(array , lb , ub [,mold=m | ,source=s] )`  
+`call eallocate(array , lb1 , ub1, lb2, ub2 [,mold=m | ,source=s] )`
 
-Wrapper to the standard `allocate` statement. The capacity can be specified, otherwise it is set to the requested size. 
+Simulation of the standard `allocate` statement. Is needed to initialize the management of the capacity. 
 
 ### resize
 `call resize( array [,lb=l] [,ub=u] [,keep=k] [,capacity=c |,container=con] [,extend=e | ,drop=d] [,mold=m | ,source=s] )`  

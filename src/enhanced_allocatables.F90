@@ -65,66 +65,33 @@ implicit none
 CONTAINS
 
    !********************************************************************************************
-   subroutine eallocate1(x,lb,ub,capacity)
+   subroutine eallocate1(x,lb,ub,mold,source)
    !********************************************************************************************
-   ! simulation of allocate( a(lb:ub)[, capacity=cap] )
-   !
-   ! In a standard implementation it would just be the classical allocate() statement
-   ! with the "capacity" specifier in addition. 
-   ! Needed here to initialize the management of the capacity
+   ! simulation of allocate(), needed here to initialize the management of the capacity
    !********************************************************************************************
    real, allocatable, intent(inout)           :: x(:)
    integer,           intent(in)              :: lb, ub
-   integer,           intent(in),    optional :: capacity
-   integer :: cap
+   real, allocatable, intent(in),    optional :: mold(..) ! should be rank-1 only, but some issue with ifort
+   real, allocatable, intent(in),    optional :: source(..)
    !********************************************************************************************
-   cap = 1
-   if (present(capacity)) cap = max(cap,capacity)
-   cap = cap - 1 + BLOCK - mod(cap-1,BLOCK)
-   call alloc(x,cap)
-   if (ub >= lb) then
-      call set_lbound(x,1,lb)
-      call set_size(x,1,ub-lb+1)
-   else
-      call set_lbound(x,1,1)
-      call set_size(x,1,0)
-   end if
+   if (allocated(x)) error stop "eallocate called on an already allocated array"
+   call resize1(x,lb,ub,mold=mold,source=source,container='fit')
    
    end subroutine
    
    
    !********************************************************************************************
-   subroutine eallocate2(x,lb1,ub1,lb2,ub2,capacity)
+   subroutine eallocate2(x,lb1,ub1,lb2,ub2,mold,source)
    !********************************************************************************************
-   ! simulation of allocate( a(lb1:ub1,lb2:ub2) [, capacity=cap] )
-   !
-   ! In a standard implementation it would just be the classical allocate() statement
-   ! with the "capacity" specifier in addition. 
-   ! Needed here to initialize the management of the capacity
+   ! simulation of allocate(), needed here to initialize the management of the capacity
    !********************************************************************************************
    real, allocatable, intent(inout)           :: x(:,:)
    integer,           intent(in)              :: lb1, ub1, lb2, ub2
-   integer,           intent(in),    optional :: capacity
-   integer :: cap
+   real, allocatable, intent(in),    optional :: mold(..) ! should be rank-2 only, but some issue with ifort
+   real, allocatable, intent(in),    optional :: source(..)
    !********************************************************************************************
-   cap = 1
-   if (present(capacity)) cap = max(cap,capacity)
-   cap = cap - 1 + BLOCK - mod(cap-1,BLOCK)
-   call alloc(x,cap)
-   if (ub1 >= lb1) then
-      call set_lbound(x,1,lb1)
-      call set_size(x,1,ub1-lb1+1)
-   else
-      call set_lbound(x,1,1)
-      call set_size(x,1,0)
-   end if
-   if (ub2 >= lb2) then
-      call set_lbound(x,2,lb2)
-      call set_size(x,2,ub2-lb2+1)
-   else
-      call set_lbound(x,2,1)
-      call set_size(x,2,0)
-   end if
+   if (allocated(x)) error stop "eallocate called on an already allocated array"
+   call resize2(x,lb1,ub1,lb2,ub2,mold=mold,source=source,container='fit')
   
    end subroutine
    
@@ -152,7 +119,11 @@ CONTAINS
    if (present(keep)) ckeep = keep
    con = 'grow'; if (present(container)) con = container
 
-   if (.not.allocated(x)) call eallocate(x,1,0)
+   if (.not.allocated(x)) then
+      call alloc(x,BLOCK)
+      call set_lbound(x,1,1)
+      call set_size(x,1,0)
+   end if
 
    newsize = size(x)     ; oldsize = newsize;    
    newcap  = capa(x)
@@ -263,7 +234,13 @@ CONTAINS
          error stop "size(extend,1) is not equal to size(x,1)"
    end if
 
-   if (.not.allocated(x)) call eallocate(x,1,0,1,0)
+   if (.not.allocated(x)) then
+      call alloc(x,BLOCK)
+      call set_lbound(x,1,1)
+      call set_size(x,1,0)
+      call set_lbound(x,2,1)
+      call set_size(x,2,0)
+   end if
 
    newsize = shape(x) ; oldsize = shape(x);
    newcap  = capa(x)             
