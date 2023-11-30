@@ -5,14 +5,10 @@ implicit none
 
    PRIVATE
    
-   PUBLIC eallocate, resize, edeallocate, capa, print_info
+   PUBLIC resize, edeallocate, capa, print_info
    
    integer, parameter :: MAX_OVERP = 2*10**4
    integer, parameter :: BLOCK = 4
-   
-   INTERFACE eallocate
-      MODULE PROCEDURE eallocate1, eallocate2
-   END INTERFACE
    
    INTERFACE resize
       MODULE PROCEDURE resize1, resize2
@@ -63,38 +59,6 @@ implicit none
    END INTERFACE
    
 CONTAINS
-
-   !********************************************************************************************
-   subroutine eallocate1(x,lb,ub,mold,source)
-   !********************************************************************************************
-   ! simulation of allocate(), needed here to initialize the management of the capacity
-   !********************************************************************************************
-   real, allocatable, intent(inout)           :: x(:)
-   integer,           intent(in)              :: lb, ub
-   real, allocatable, intent(in),    optional :: mold(..) ! should be rank-1 only, but some issue with ifort
-   real, allocatable, intent(in),    optional :: source(..)
-   !********************************************************************************************
-   if (allocated(x)) error stop "eallocate called on an already allocated array"
-   call resize1(x,lb,ub,mold=mold,source=source,container='fit')
-   
-   end subroutine
-   
-   
-   !********************************************************************************************
-   subroutine eallocate2(x,lb1,ub1,lb2,ub2,mold,source)
-   !********************************************************************************************
-   ! simulation of allocate(), needed here to initialize the management of the capacity
-   !********************************************************************************************
-   real, allocatable, intent(inout)           :: x(:,:)
-   integer,           intent(in)              :: lb1, ub1, lb2, ub2
-   real, allocatable, intent(in),    optional :: mold(..) ! should be rank-2 only, but some issue with ifort
-   real, allocatable, intent(in),    optional :: source(..)
-   !********************************************************************************************
-   if (allocated(x)) error stop "eallocate called on an already allocated array"
-   call resize2(x,lb1,ub1,lb2,ub2,mold=mold,source=source,container='fit')
-  
-   end subroutine
-   
    
    !********************************************************************************************
    subroutine resize1(x,lb,ub,keep,capacity,container,extend,drop,mold,source)

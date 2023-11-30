@@ -114,7 +114,7 @@ print*, "====== WITH A ENHANCED ALLOCATABLE"
 print*, "starts with size=1"
 print*, "iteratively triples the size"
 print*, "then iteratively drop 2/3 of the elements"
-call eallocate(a,lb=1,ub=1)
+call resize(a,lb=1,ub=1)
 a(1) = 0.0
 do i = 1, 11
    S=real(i); call resize(a,lb=1,ub=3*size(a),keep=.true.,source=S)
@@ -138,7 +138,7 @@ call edeallocate(a)
 print*
 print*, "====== WITH A 2D ENHANCED ALLOCATABLE"
 print*, "starts with size=0"
-call eallocate(aa,1,0,1,0)
+call resize(aa,1,0,1,0)
 print*, lbound(aa), shape(aa), capa(aa)
 allocate( bb(0:999,5) )
 print*, "resize with mold(0:999,5)"

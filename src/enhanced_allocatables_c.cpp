@@ -16,10 +16,10 @@ unordered_map<void*,int> capamap;
 extern "C"
 int ea_capacity(CFI_cdesc_t* x) {
     if (capamap.find(x->base_addr) == capamap.end()) {
-        printf("ea_capacity() error: base address %p not mapped",x->base_addr);
-        exit(100);
+        return -1;
+    } else {
+        return capamap[x->base_addr];
     }
-    return capamap[x->base_addr];
 }
 
 // prints some informations
@@ -64,7 +64,7 @@ extern "C"
 void ea_setCapacity(CFI_cdesc_t*  x,
                     int*          newcap,
                     bool*         keep) {
-    if (*newcap == capamap[x->base_addr]) return;
+    if (*newcap == ea_capacity(x)) return;
     
     CFI_CDESC_T(1) y_;
     CFI_cdesc_t* y = (CFI_cdesc_t*)&y_;
@@ -75,12 +75,11 @@ void ea_setCapacity(CFI_cdesc_t*  x,
     if (*keep) {
         int n = 1;
         for (int r=0; r < x->rank; r++) n *= x->dim[r].extent;
-        n = MIN(n,ea_capacity(x));
         n = MIN(n,*newcap);
         if (n > 0) memcpy(y->base_addr,x->base_addr,n*sizeof(float));
     }
-    capamap.erase(capamap.find(x->base_addr));
-    std::swap(x->base_addr,y->base_addr);
+    if (ea_capacity(x) > 0) capamap.erase(capamap.find(x->base_addr));
+    swap(x->base_addr,y->base_addr);
     capamap.insert({x->base_addr,*newcap});
     CFI_deallocate(y);
 }
