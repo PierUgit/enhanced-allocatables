@@ -7,7 +7,7 @@ implicit none
    
    PUBLIC resize, edeallocate, capa, print_info
    
-   integer, parameter :: MAX_OVERP = 2*10**4
+   integer, parameter :: MAX_OVERP = 100 * 10**6
    integer, parameter :: BLOCK = 4
    
    INTERFACE resize

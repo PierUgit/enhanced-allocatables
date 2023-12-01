@@ -47,7 +47,7 @@ call edeallocate(a)
 print*
 print*, "====== WITH A NORMAL ALLOCATABLE"
 print*, "starts with size=0"
-print*, "iteratively append 1 element 100000 times, then iteratively drop 1 element 100000 times"
+print*, "iteratively append 1 element 100000 times times"
 call system_clock(tic,rate)
 allocate(a(0))
 location = loc(a)
@@ -62,7 +62,11 @@ do i = 1, 100000
    location = newlocation
 end do
 print*, "At least",count," reallocations during growing"
-count = 0 
+call system_clock(toc,rate)
+print*, "Elapsed time =", (toc-tic)/rate
+print*, "iteratively drop 1 element 100000 times"
+call system_clock(tic,rate)
+count = 0
 do i = 1, 100000
    a = a(1:size(a)-1)
    newlocation = loc(a)
@@ -80,7 +84,7 @@ print*, "Elapsed time =", (toc-tic)/rate
 print*
 print*, "====== WITH A ENHANCED ALLOCATABLE"
 print*, "starts with size=0"
-print*, "iteratively append 1 element, then iteratively drop 1 element"
+print*, "iteratively append 1 element 100000 times"
 call system_clock(tic,rate)
 cap = 0
 do i = 1, 100000
@@ -88,17 +92,20 @@ do i = 1, 100000
    newcap = capa(a)
    if (newcap /= cap) then
       print*, "size = ", size(a), "   capacity changed from", cap, " to:", newcap
-      cap = newcap
+      cap = capa(a)
    end if
    call random_number(x); k = ceiling(x*i)
    if (nint(a(k)) /= k) error stop "Problem while growing 1 by 1"
 end do
+call system_clock(toc,rate)
+print*, "Elapsed time =", (toc-tic)/rate
+call system_clock(tic,rate)
 do i = 100000, 1, -1
    call resize(a,drop=1,container='any')
    newcap = capa(a)
    if (newcap /= cap) then
       print*, "size = ", size(a), "   capacity changed from", cap, " to:", newcap
-      cap = newcap
+      cap = capa(a)
    end if
    if (i /= 1) then
       call random_number(x); k = ceiling(x*size(a))
@@ -116,20 +123,20 @@ print*, "iteratively triples the size"
 print*, "then iteratively drop 2/3 of the elements"
 call resize(a,lb=1,ub=1)
 a(1) = 0.0
-do i = 1, 11
+do i = 1, 18
    S=real(i); call resize(a,lb=1,ub=3*size(a),keep=.true.,source=S)
    newcap = capa(a)
    if (newcap /= cap) then
       print*, "size = ", size(a), "   capacity changed from", cap, " to:", newcap
-      cap = newcap
+      cap = capa(a)
    end if
 end do
-do i = 11, 1, -1
+do i = 18, 1, -1
    call resize(a,drop=2*size(a)/3,container='any')
    newcap = capa(a)
    if (newcap /= cap) then
       print*, "size = ", size(a), "   capacity changed from", cap, " to:", newcap
-      cap = newcap
+      cap = capa(a)
    end if
    if (nint(a(size(a))) /= i-1) error stop "Problem while shrinking by 2/3"
 end do
