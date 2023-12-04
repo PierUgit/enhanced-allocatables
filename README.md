@@ -1,23 +1,47 @@
 # Enhanced Fortran allocatable arrays
 Extending the allocatable arrays to be dynamically reallocatable/resizable
 
-**FOR DEMONSTRATION PURPOSE ONLY**
+## Proposal
 
 Objectives:
-- Following the C++ vector class principle, resize an already allocated array, keeping or not the existing content, without necessarily freeing/rellocating the memory
-- modifying the bounds of an allocated array
+- Following (and somehow extending) the C++ vector class principle, resize an already allocated array, keeping or not the existing content, without necessarily freeing/rellocating the memory
+- dynamically modifying the bounds of an already allocated array
+
+### Specifications
+
+- Similarly to C++ vectors, the enhanced Fortran allocatable arrays have a *capacity* property, corresponding to the actually allocated memory volume. The capacity is larger or equal to the size, and the difference `capacity - size` is the overprovisioning
+- When resizing an array, no actual free/malloc is needed as long as the new size does not exceed the current capacity, and the existing content does not have to be copied if one wants to keep it
+- An efficient allocation strategy aims at reducing the occurences of actual free/malloc
+  - the capacity is (possibly iteratively) doubled if the new size exceeds the capacity
+  - optionaly, the capacity is (possibly iteratively) halved if the new size gets below a percentage of the capacity (33% in the demonstration code).
+  - the compiler may cap the overprovisioning (possibly as a function of the available physical memory)
+- the user can overide the default strategy by using the `capacity` specifier (**this is an important point**)
+- the compiler is free to internally adjust the capacity to always be a multiple of some bytes (16 bytes in the demonstration code)
+
+### Statements
 
 It it was integrated to the langage, the proposal would add:
 
-- a `resize` statement with the `keep`, `capacity`, `container`, `extend`, `mold`, `source` specifiers
+- a `resize` statement with the `keep`, `capacity`, `container`, `extend`, `drop`, `mold`, and `source` specifiers  
+`resize( array[(array-bounds-list)] [,mold=m] [,source=s] [,keep=k] [,capacity=c] [,container=con] [,extend=e] [,drop=d] )`
+  - bounds:
+    - `array` or `array(:)` : the lower bound is unmodified; the upper bound is modified if the size is modified by the other specifiers
+    - `array(lb: )` : specifying a new lower bound; the upper bound is modified accordingly (also as a function of the new size depending on the other specifiers)
+    - `array( :ub)` : specifying a new upper bound; the lower bound is modified accordingly (also as a function of the new size depending on the other specifiers)
+    - `array([lb:]ub)` : specifying a new size; the new lower bound is 1 if unspecified 
+    - all the above can be combined for the different dimension, e.g. `array(5: ,:,100)` 
+  - Please refer to the demonstration code documentation below to get a full description of the specifiers.
+  - instead of a new `resize` statement, all these new features could alternatively be included in the existing `allocate` statement
 
-`resize( array([lb]:[ub]) [,keep=k] [,capacity=c] [,container=con] [,extend=e] [,drop=d] [,mold=m] [,source=s])`
+- a `capacity( array )` integer function to inquire the capacity of an array
 
-- a `capa( a )` integer function to inquire the capacity of an array
+## Demonstration code
 
-In the demonstration code we have however to simulate everything with subroutines.
+**FOR DEMONSTRATION PURPOSE ONLY**
 
-Limitations of the demonstration code:
+In the demonstration code we have to simulate the new statement with subroutines.
+
+Limitations:
 - default real kind only (the generalization to any kind is trivial)
 - rank-1 and rank-2 only (the generalization to any rank is trivial)
 - size and capacity limited to default integer values
@@ -33,26 +57,13 @@ TESTED SUCCESSFULLY WITH:
 **DOES NOT WORK WITH:**
 - ...
 
-## compilation
+### compilation
 
 ```
 gfortran -c -O3 enhanced_allocatables.F90 eatest.f90                            && \
 g++ -O3 -lgfortran enhanced_allocatables.o eatest.o enhanced_allocatables_c.cpp && \
 a.out
 ```
-
-## Specifications
-
-- Similarly to C++ vectors, the enhanced Fortran allocatable arrays have a *capacity* property, corresponding to the actually allocated memory volume. The capacity is larger or equal to the size, and the difference `capacity - size` is the overprovisioning
-- When resizing an array, no actual free/malloc is needed as long as the new size does not exceed the current capacity, and the existing content does not have to be copied if one wants to keep it
-- An efficient allocation strategy aims at reducing the occurences of actual free/malloc
-  - the capacity is (possibly iteratively) doubled if the new size exceeds the capacity
-  - optionaly, the capacity is (possibly iteratively) halved if the new size gets below a percentage of the capacity (33% in the demonstration code).
-  - the compiler may cap the overprovisioning (possibly as a function of the available physical memory)
-- the user can overide the default strategy by using the `capacity` specifier (**this is an important point**)
-- the compiler is free to internally adjust the capacity to always be a multiple of some bytes (16 bytes in the demonstration code)
-
-## Documentation
 
 ### resize
 `call resize( array [,lb=l] [,ub=u] [,keep=k] [,capacity=c |,container=con] [,extend=e | ,drop=d] [,mold=m | ,source=s] )`
@@ -120,5 +131,12 @@ a.out
 ### edeallocate()
 `call edeallocate(array)`
 
-Wrapper to the standard `deallocate` statement. Is needed to update the hidden capacity table.
+Replaces the standard `deallocate` statement. Is needed to update the hidden capacity table, but would not be needed with a formal integration to the standard.
+
+### capa()
+`c = capa(array)`
+
+- returns the current capacity of `array`
+- returns -1 if `array` has been allocated with the standard `allocate()` and `resize()` has not been called at least once on it. This is a limitation of the demonstration code, in a standard implementation any array would have a defined capacity.
+- would be named `capacity()` in a standard implementation, but we had to avoid a name collision with the `capacity=` argument in `resize()`
 
