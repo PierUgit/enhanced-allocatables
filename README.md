@@ -52,7 +52,7 @@ Limitations:
 TESTED SUCCESSFULLY WITH:
 - gfortran/g++ 13 on macOS 10.13
 - gfortran/g++ 10 on Linux db11
-- ifort/icpc 21 on Linux db11 (although with a bug; workaround: compile with `-DIFORT)
+- ifort/icpc 21 on Linux db11
 
 **DOES NOT WORK WITH:**
 - ...
