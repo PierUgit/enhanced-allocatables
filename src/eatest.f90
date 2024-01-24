@@ -37,7 +37,7 @@ print*, "increase the size to 18"
 call resize(a,lb=-2,ub=15,keep=.true.,source=ZERO)
 print*, lbound(a), size(a), capa(a), a(-1)
 print*, "append 3 elements 100 200 300"
-call resize(a,keep=.true.,extend=[100.0, 200.0, 300.0])
+call resize(a,keep=.true.,append=[100.0, 200.0, 300.0])
 print*, lbound(a), size(a), capa(a), a(-1), a(ubound(a,1))
 print*, "reset the capacity to fit the size"
 call resize(a,keep=.true.,container='fit')
@@ -88,7 +88,7 @@ print*, "iteratively append 1 element 100000 times"
 call system_clock(tic,rate)
 cap = 0
 do i = 1, 100000
-   call resize(a,extend=real(i))
+   call resize(a,append=real(i))
    newcap = capa(a)
    if (newcap /= cap) then
       print*, "size = ", size(a), "   capacity changed from", cap, " to:", newcap
