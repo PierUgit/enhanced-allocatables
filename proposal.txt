@@ -1,0 +1,300 @@
+To: J3                                                     J3/XX-XXX
+From: Pierre Hugonnet
+Subject: extending the allocatable arrays to be dynamically resizable
+Date: 2024-01-11
+#Reference:
+
+1. Introduction
+
+Following (and somehow extending) the C++ vector class principle, 
+the proposal is to be able to resize an already allocated array, 
+keeping or not the existing content, without necessarily 
+freeing/reallocating the memory. It is also about dynamically 
+changing the bounds of an array.
+
+
+2. Motivation
+
+A typical use case is iteratively appending a scalar to an existing
+array, but the final size of the array is unknown:
+
+    program foo
+    real, allocatable :: a(:)
+    real :: x
+    !...
+    allocate( a(0) )
+    do
+       ! get the scalar x, whatever the mean (file reading, computations,...)
+       a = [a, x]
+       if (<some test>) exit
+    end do
+    !...
+    end
+
+This is inefficient, because very often the `a = [a, x]` instruction 
+is actually achieved with one temporary allocation and one data copy:
+    allocate( tmp(size(a)+1) )
+    tmp(1:size(a)) = a(:)
+    tmp(size(a+1)) = x
+    call move_alloc(tmp,a)
+
+Several workarounds can be used to get better performances, but 
+they all require more code.
+
+
+3. Proposed solution
+
+3.1. Introduction
+
+Similarly to C++ vectors, the Fortran allocatable arrays have a new
+*capacity* property, corresponding to the actually allocated memory 
+volume (expressed in number of elements). The capacity is larger or 
+equal to the size, and the difference `capacity - size` is the 
+overprovisioning. When resizing an array, no actual malloc/copy/free 
+is needed as long as the new size does not exceed the current capacity.
+
+When resizing, an efficient allocation strategy aims at reducing the 
+occurences of actual malloc/copy/free
+- the capacity is (possibly iteratively) doubled if the new size 
+  exceeds the current capacity
+- optionaly, the capacity is (possibly iteratively) halved if the 
+  new size gets below a given percentage of the current capacity (e.g. 33%) (*)
+- the compiler may cap the overprovisioning (possibly as a function 
+  of the available physical memory)
+- the user can overide the default overprovisioning strategy
+- the compiler is free to internally adjust the capacity (e.g. for 
+  alignment purposes)
+
+One important point is the ability to keep the existing content of 
+an array when resized (or a part of it if the array is shrinked). 
+And this is also important to note that for rank > 1 arrays keeping 
+the existing content is possible only if the sizes do not change on 
+the dimensions other than the last one: this is a consequence of the 
+column-major memory layout used by Fortran.
+
+(*) if the threshold was set to 50% for the capacity decrease, there 
+could be too frequent malloc/copy/free in some corner cases. Setting 
+a threshold much below 50% introduces a desirable hysterisis. Note that 
+there's no decrease strategy in the C++ vectors.
+
+The `allocate()` statement behaves exactly the same as before (without 
+overprovioning). The new behavior is obtained only through a new 
+`resize()` statement. Apart from the pure resizing feature, it also 
+offers other useful features.
+
+
+3.2. Examples
+
+On a rank-3 array `a`, changing the lower bound of the 1st dimension 
+without changing the size, do nothing on the 2nd dimension, and changing 
+the size of the 3rd dimension. The existing content is kept:
+    resize( a(-2: , : ,10000) )
+ 
+Appending a scalar `x` to a rank-1 array `a` (the existing content is kept):
+    resize(a, append=x)
+(similar to `a = [a, x]`, but this one ignores the overprovisioning)
+
+Appending a rank-2 array x to a rank-3 array `a` (the existing content 
+is kept)... Yes, the syntax is the same:
+    resize(a, append=x)
+(similar to the Matlab notation `a = [a, x]`, which in contrast to Fortran 
+is valid for ranks > 1)
+
+Dropping the last 5 2D slices in a rank-3 array (the rest of the content 
+is kept; the capacity cannot decrease):
+    resize( a, drop=5 )
+This is equivalent to (but more readable than):
+    resize( a(:,:,lbound(a,3):ubound(a,3)-5) )
+And similar to `a = a(:,:,lbound(a,3):ubound(a,3)-5)` (but this one ignores 
+the overprovisioning)
+
+Dropping the last 100 elements of a rank-1 array (the existing content is kept), 
+allowing the capacity to possibly decrease:
+    resize( a, drop=100, container='any' )
+
+Forcing the capacity to the size of the array `a` (the existing content is kept):
+    resize( a, container='fit' )
+
+Resizing an array `a` to the same bounds and sizes than a array `b` 
+(the content is not kept):
+    resize( a, mold=b )
+
+Cloning an array `b` (including the content) to the array `a` (obviously the 
+existing content of `a` is not kept):
+    resize( a, source=b )
+
+Enlarging a rank-2 array `a` along the 2nd dimension, keeping the existing 
+content, and initializing the NEW elements with the scalar `0.0`
+    resize( a(:,1000), source=0.0 )
+
+Enlarging a rank-2 array `a` along the 1st dimension, not keeping the 
+existing content, and (re-)initializing ALL the elements with the scalar `0.0`
+    resize( a(1000,:), keep=.false. source=0.0 )
+
+
+3.3. Syntax
+
+The full syntax is:
+
+    resize( arr[(array-bounds-list)] &
+            [,keep=.false.] [ [,mold=m | ,source=s] | [,append=a | ,drop=d] ] &
+            [,capacity=c |,container=con] )
+
+`arr`
+- any array, unallocated or already allocated
+- `r = rank(arr)`
+
+As denoted by the `[ | ]` symbols:
+- `mold=` and `source=` are mutually exclusive
+- `append=` and `drop=` are mutually exclusive
+- `mold=` or `source=` on the one hand, and `append=` or `drop=` on the 
+  other hand, are mutually exclusive
+- `capacity=` and `container=` are mutually exclusive
+
+For each dimension the bounds can be:
+- `( : )` : the bounds and size are not modified
+- `(lb: )` : specifying a new lower bound; the upper bound is modified 
+  accordingly (the size does not change)
+- `( :ub)` : specifying a new upper bound; the lower bound is modified 
+  accordingly (the size does not change)
+- `(sz)` : specifying a new size; the new lower bound is 1
+- `(lb:ub)` : specifying new lower and upper bounds (and hence a new size)
+- if any of the sizes first (r-1) dimensions of `arr` changes, then 
+  `keep=.false.` is implied and `keep=.true.` cannot be coded; otherwise `keep=.true.` is implied
+
+`keep=k`
+- `k` is a logical scalar
+- the default value depends on the other specifiers
+
+`mold=m`
+- `m` is an array with the same TKR as `arr`
+- `arr` gets the same shape and bounds as `m`
+- array bounds cannot not be coded with `mold=`
+- `keep=.false.` is implied and `keep=.true.` cannot be coded
+
+`source=s`
+- if `s` is an array of the same TKR as `arr`
+  - `s` is cloned to `arr`
+  - array bounds cannot be coded
+  - `keep=.false.` is implied and `keep=.true.` cannot be coded
+- if `s` is a scalar of the same TK as `arr`
+  - makes sense only if array bounds are coded
+  - if `keep=.true.` is coded or implied, the NEW elements (if there are) 
+    are initialized to `s`
+  - if `keep=.false.` is coded or implied, ALL the elements are initialized to `s`
+
+`append=a`
+- `a` is an array of the same TK as `arr`
+- the rank of `a` must be `r` or `r-1`
+- the sizes of the first (r-1) dimensions of `a` must match the sizes of the 
+  first (r-1) dimensions of `arr` (this cannot be checked at compile time, though) 
+- `a` is appended to `arr`; the size of the last dimension of `arr` is increased by:
+  - 1 if `a` is rank r-1
+  - size(a,dim=r) if `a` is rank r
+- array bounds cannot be coded with `append=`
+- `keep=.true.` is implied and `keep=.false.` cannot be coded
+
+`drop=d`
+- `d` is an integer scalar
+- given `r=rank(arr)`, drops the `d` last rank r-1 slices of `array`
+- the size of the last dimension of `arr` is decreased by `d`
+- array bounds cannot be coded with `drop=`
+- `keep=.true.` is implied and `keep=.false.` cannot be coded
+
+`capacity=c`
+- `c` is an integer scalar, used to to force the capacity to a desired value
+- the actual capacity is internally set at least to the final size of `arr`
+
+`container=con`
+- `con` is a character(*) scalar:
+  - `'grow'` (default): the capacity can only increase
+  - `'any'`: the capacity can increase or decrease
+  - `'fit'`: the capacity is set to the final size of `arr`
+
+
+    c = capacity(arr [,kind=ik])
+
+Integer function that returns the capacity of an allocatable array.
+
+
+3.4 Alternative syntax
+
+All the features decribed for the new `resize` statement could instead 
+be included in the existing `allocate` statement.  
+- Pros:
+  - no new statement, `allocate` can be used for all purposes
+Cons:
+  - most of time the resizability and the associated overprovisioning 
+   are not needed. This could be solved by changing the default of `container=` 
+   to "fit" whenever `allocate` is called with an unallocated array
+  - allocating an already allocated array by mistake could no longer be detected
+
+3.5 assignments
+
+what should happen in `a = <rhs>`, `a` being an allocatable array?
+
+For "simplicity" the inheritance of the capacity should follow the same 
+rule as  the inheritance of the bounds, that is:
+- if the shape of <rhs> is the same as the shape of `a`, `a` keeps its 
+  current capacity
+- if the shape of <rhs> differs from the shape of `a`, `a` inherits the 
+  capacity of <rhs>; more precisely
+  - if <rhs> is itself an allocatable array, without any selector, `a` 
+    gets the same capacity as <rhs> after the assignment (in other words 
+    it's a full clone of <rhs>)
+  - otherwise the capacity of `a` is set to the final size of `a`
+    (no overprovisioning)
+
+4. demonstration code
+
+This proposal has been implemented for limited cases (rank-1 and rank-2 
+default integer arrays) in a demonstration code:
+https://github.com/PierUgit/enhanced-allocatables
+
+This code relies on the C interoperability and the direct manipulation 
+of the C array descriptors: it is non standard and therefore non portable 
+(it works with ifort 21 and gfortran 13). Note also that it is a bit 
+different from the proposal, because the latter has evolved since the 
+code has been written. Nonetheless, it shows that the implementation in 
+the compilers would probably be fairly simple, with an addional `capacity` 
+component in the array descriptor. Moreover, it seems that some (most of?,
+all?) compilers already implement some (very limited) overprovisioning 
+(maybe for alignment purpose?).
+
+As an example, the iterative appending operation is lightning fast in this code, compared to the `a = [a, x]` way.
+
+
+5. LImitations / Issues / Objections
+
+5.1. Complexity
+
+Although the underlying idea is quite simple, the description of the 
+new `resize()` statement is a bit complex, because of the interactions 
+between the different specifiers. This is particularly true for the `keep=`
+specifier, which has different defaults depending on the cases, which 
+can be confusing. A way to make it less confusing would be to make `keep=` 
+mandatory, so that the intent would be clear when reading the code.
+
+5.2. Naming
+
+The `container=` specifier and the values it can take may have better names.
+
+5.3 array bounds
+
+If the array bounds list was provided by rank-1 arrays (as introduced 
+in Fortran 2023), the compiler could not check at compile time which 
+dimensions are potentially resized, and therefore could not determine 
+if keeping the existing content is possible or not. So it's probably 
+better to not allow this syntax in `resize()`.
+
+
+6. References
+
+Fortran discourse discussion:
+https://fortran-lang.discourse.group/t/enhancements-to-allocatable-arrays/6743
+
+Fortran proposals Github issue:
+https://github.com/j3-fortran/fortran_proposals/issues/326
+
+Demonstration code:
+https://github.com/PierUgit/enhanced-allocatables
