@@ -82,6 +82,8 @@ a.out
 
 ### resize
 
+**mode 1**
+
 `call resize( array [,lb=l] [,ub=u] [,keep=k] [,source=s] [,capacity=c |,container=con] )`
 
 `call resize( array [,lb1=l1] [,ub1=u1] [,lb2=l2] [,ub2=u2] [,keep=k] [,source=s] [,capacity=c |,container=con] )` 
@@ -110,14 +112,14 @@ a.out
   - if `keep=.false., `s` is used to initialize all the elements of the resized array
   - if `keep=.true` or not present, `s` is used to fill only the new elements of the resized array (if enlarged)
 
-
+**mode 2**
 
 `call resize( array [,append=a | ,drop=d] [,capacity=c |,container=con] )`
 
 `array`, `capacity=c`, and `container=con`
 - same as above
 
-`append=e`
+`append=a`
 - `a` is appended to `array`
   - if `array` is rank-1, `a` is a scalar or a rank-1 array
   - if `array` is rank-2, `a` is a rank-1 or rank-2 array
@@ -132,7 +134,7 @@ a.out
   - drops the `d` last columns of `array` if `array` is rank-2
 - the size of `array` is decreased accordindly
 
-
+**mode 3**
 
 `call resize( array [,mold=m | ,source=s] [,capacity=c |,container=con] )`
 
