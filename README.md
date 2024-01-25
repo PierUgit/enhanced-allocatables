@@ -22,18 +22,33 @@ Objectives:
 
 If it was integrated to the langage, the proposal would add:
 
-- a `resize` statement with the `keep`, `capacity`, `container`, `append`, `drop`, `mold`, and `source` specifiers  
-`resize( array[(array-bounds-list)] [,keep=k] [,append=e | ,drop=d | ,mold=m | ,source=s] [,capacity=c | ,container=con]  )`
+- a `resize` statement with a number of specifiers; while this is this a unique statement, it has three different modes that are better described separately:
+  - `resize( array[(array-bounds-list)] [,keep=k] [,source=s] [,capacity=c | ,container=con] )`
+    - resizing an array by specifying new bounds/sizes
+    - the existing data can be kept or not
+    - `s` is a scalar
+  - `resize( array, [,append=a | ,drop=d] [,capacity=c | ,container=con] )`
+    - resizing an array by appending or dropping elements
+    - the existing data are kept (except the dropped elements!)
+  - `resize( array, [,mold=m | ,source=s] [,capacity=c | ,container=con] )`
+    - resizing an array by cloning the shape, and possibly the content, of another array
+    - `s` is an array
+    - the existing data are not kept
   - bounds:
     - `array` or `array(:)` : the lower bound is unmodified; the upper bound is modified if the size is modified by the other specifiers
     - `array(lb: )` : specifying a new lower bound; the upper bound is modified accordingly (also as a function of the new size depending on the other specifiers)
     - `array( :ub)` : specifying a new upper bound; the lower bound is modified accordingly (also as a function of the new size depending on the other specifiers)
     - `array([lb:]ub)` : specifying a new size; the new lower bound is 1 if unspecified 
-    - all the above can be combined for the different dimension, e.g. `array(5: ,:,100)` 
-  - Please refer to the demonstration code documentation below to get a full description of the specifiers.
-  - instead of a new `resize` statement, all these new features could alternatively be included in the existing `allocate` statement
-
-- a `capacity( array )` integer function to inquire the capacity of an array
+    - all the above can be combined for the different dimensions, e.g. `array(5: ,:,100)` 
+  - container:
+    - `container=con` specifies how the container capacity can vary:
+      - "grow" (default): the capacity can only increase
+      - "any": the capacity can increase or decrease
+      - "fit": the capacity is set to the final size of the array
+    - `capacity=c` forces the capacity of the container to a desired (integer) value `c`
+  - Please refer to the demonstration code documentation below to get a full description of the other specifiers.
+ 
+- a `capacity( array [,kind=k] )` integer function to inquire the capacity of an array
 
 ## Demonstration code
 
@@ -42,7 +57,7 @@ If it was integrated to the langage, the proposal would add:
 In the demonstration code we have to simulate the new statement with subroutines.
 
 Limitations:
-- default real kind only (the generalization to any kind is trivial)
+- default real kind only (the generalization to any kind is trivial but tedious)
 - rank-1 and rank-2 only (the generalization to any rank is trivial)
 - size and capacity limited to default integer values
 - `mold=` and `source=` limited to allocatable argument, as this is the only way to get lower bounds /= 1
@@ -66,9 +81,10 @@ a.out
 ```
 
 ### resize
-`call resize( array [,lb=l] [,ub=u] [,keep=k] [,append=e | ,drop=d | ,mold=m | ,source=s] [,capacity=c |,container=con] )`
 
-`call resize( array [,lb1=l1] [,ub1=u1] [,lb2=l2] [,ub2=u2] [,keep=k] [,append=e | ,drop=d | ,mold=m | ,source=s] [,capacity=c |,container=con] )` 
+`call resize( array [,lb=l] [,ub=u] [,keep=k] [,source=s] [,capacity=c |,container=con] )`
+
+`call resize( array [,lb1=l1] [,ub1=u1] [,lb2=l2] [,ub2=u2] [,keep=k] [,source=s] [,capacity=c |,container=con] )` 
 
 `array`
 - a rank-1 or rank-2 `REAL` array
@@ -80,54 +96,56 @@ a.out
 
 `lb=l` , `ub=u` 
 - `l` and `u` are the new lower and upper bounds.
-- if only one is coded, the bounds are updated and the size does not change
-- if both are coded the size is potentially modified, and so is the capacity
+- if only one is present, the bounds are updated and the size does not change
+- if both are present the size is potentially modified (and so is the capacity)
 
 `keep=k`
-- `k` is a logical scalar; its default value depends on the other specifiers
-- If `.true.`, the content of the array is kept whenever the array has te be reallocated under the hood
+- `k` is a logical scalar
+  - `.true.`: the existing content of the array is kept in all cases
+  - `.false.`: the existing content of the array is not kept
+  - in the 2D case, `keep=.true.` is not allowed if both `lb1=` and `ub1=` are present
 
-`capacity=c`
-- `c` is an integer scalar, used to to force the number of elements actually allocated under the hood
+`source=s`
+- `s` is a real scalar
+  - if `keep=.false., `s` is used to initialize all the elements of the resized array
+  - if `keep=.true` or not present, `s` is used to fill only the new elements of the resized array (if enlarged)
 
-`container=con`
-- `con` is a character(*) scalar:
-  - `'grow'`: the capacity can only increase
-  - `'any'`: the capacity can increase or decrease
-  - `'fit'`: the capacity is set to the size
+
+
+`call resize( array [,append=a | ,drop=d] [,capacity=c |,container=con] )`
+
+`array`, `capacity=c`, and `container=con`
+- same as above
 
 `append=e`
-- `e` is appended to `array`
-  - if `array` is rank-1, `e` is a scalar or a rank-1 array
-  - if `array` is rank-2, `e` is a rank-1 or rank-2 array
-    - `size(e,1)` must be equal to `size(array,1)`
+- `a` is appended to `array`
+  - if `array` is rank-1, `a` is a scalar or a rank-1 array
+  - if `array` is rank-2, `a` is a rank-1 or rank-2 array
+    - `size(a,1)` must be equal to `size(array,1)`
 - the size of `array` is increased accordindly
-  - if `array` is rank-1, its size is increasing by `1` or by `size(e)`
-  - if `array` is rank-2, `size(array,2)` is increasing by `1` or by `size(e,2)`
-- `lb=` and `ub=` must not be coded
-- `keep=` must not be coded, and `keep=.true.` is implied
+  - if `array` is rank-1, its size is increasing by `1` or by `size(a)`
+  - if `array` is rank-2, `size(array,2)` is increasing by `1` or by `size(a,2)`
 
 `drop=d`
 - `d` is an integer scalar
   - drops the `d` last elements of `array` if `array` is rank-1
   - drops the `d` last columns of `array` if `array` is rank-2
 - the size of `array` is decreased accordindly
-- `lb=` and `ub=` must not be coded
-- `keep=` must not be coded, and `keep=.true.` is implied
+
+
+
+`call resize( array [,mold=m | ,source=s] [,capacity=c |,container=con] )`
+
+`array`, `capacity=c`, and `container=con`
+- same as above
 
 `mold=m`
 - works exactly like in the standard `allocate` statement
-- `lb=` and `ub=` must not be coded`
-- `keep=` must not be coded, and `keep=.false.` is implied
 
 `source=s`
-- if `s` is an array
-  - works exactly like in the standard `allocate` statement, but:
-  - `lb=` and `ub=` must not be coded`
-  - `keep=` must not be coded, and `keep=.false.` is implied
-- if `s` is a scalar
-  - if `keep=.false., `s` is used to initialize all the elements of the resized array
-  - if `keep=.true` or not present, `s` is used to fill only the new elements of the resized array (if enlarged)
+- `s` is an array
+- works exactly like in the standard `allocate` statement, but:
+
 
 ### edeallocate()
 `call edeallocate(array)`
