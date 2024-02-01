@@ -74,9 +74,11 @@ TESTED SUCCESSFULLY WITH:
 
 ### compilation
 
+(manual compilation, I can't find how to do it with fpm)
+
 ```
-gfortran -c -O3 enhanced_allocatables.F90 eatest.f90                            && \
-g++ -O3 -lgfortran enhanced_allocatables.o eatest.o enhanced_allocatables_c.cpp && \
+gfortran -c -O3 src/enhanced_allocatables.F90 src/eatest.f90                        && \
+g++ -O3 -lgfortran enhanced_allocatables.o eatest.o src/enhanced_allocatables_c.cpp && \
 a.out
 ```
 
