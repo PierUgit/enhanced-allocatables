@@ -9,6 +9,7 @@ auto-executables = true
 auto-tests = true
 auto-examples = true
 module-naming = false
+link=['stdc++'] 
 [install]
 library = false
 [fortran]
