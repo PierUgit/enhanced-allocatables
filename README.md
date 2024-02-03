@@ -74,7 +74,7 @@ TESTED SUCCESSFULLY WITH:
 
 ### compilation
 
-fpm --profile release test
+`fpm --profile release test`
 
 ### resize
 
