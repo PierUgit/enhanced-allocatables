@@ -278,19 +278,39 @@ As an example, the iterative appending operation is lightning fast in this
 code, compared to the `a = [a, x]` way.
 
 
-5. LImitations / Issues / Objections
+5. Limitations / Issues / Objections
 
-5.2. Names
+5.1. Only along the last dimension?
 
-The `container=` specifier and the values it can take may have better names.
+So far, many things above (resizing without reallocating, appending, ...)
+are described only wrt the last dimension. They could be extended to all the
+dimensions, but this would break the contiguity property of the allocatable 
+arrays. The bacward compability wouldn't be affected I think, but the 
+underlying behavior of some codes may change. If one would want to treat all 
+the dimensions similarly, a new attribute would probably be required, e.g.
+`resizable` instead of `allocatable`.
 
-5.3 Array bounds
+5.2. Isn't virtual memory making all of this pointless?
+
+Modern OS's differentiate virtual memory and resident memory. They can 
+allocatable huge amounts of the former one, and map it to physical pages
+(in the RAM or in the swap files) only once accessed. When not knowing
+the final size of an array one can allocate a large amount and just use 
+what's needed on the fly: the unused part will never occupy any physical
+space. In some sense, this can make the resize features maybe not useless,
+but at least less useful.
+
+5.3. Array bounds
 
 If the array bounds list was provided by rank-1 arrays (as introduced 
 in Fortran 2023), the compiler could not check at compile time which 
 dimensions are potentially resized, and therefore could not determine 
 if keeping the existing content is possible or not. So it's probably 
 better to not allow this syntax in `resize()`.
+
+5.4. Names
+
+The `container=` specifier and the values it can take may have better names.
 
 
 6. References
