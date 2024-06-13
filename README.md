@@ -1,5 +1,5 @@
 # Enhanced Fortran allocatable arrays
-appending the allocatable arrays to be dynamically reallocatable/resizable
+Extending the allocatable arrays to be dynamically reallocatable/resizable
 
 ## Proposal
 
